@@ -1,6 +1,6 @@
 import unittest
 
-from japanese_reading_core import (
+from japanese_language_core.reading import (
     EngineUnavailableError,
     ReadingToken,
     SudachiEngine,
