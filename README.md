@@ -1,5 +1,7 @@
 # Nihongo Core（japanese-language-core）
 
+**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+
 Nihongo Core is a professional Japanese language processing library for
 Python: contextual reading, kana and romaji, furigana alignment,
 deinflection, line-preserving translation contracts, dictionary metadata,

@@ -1,5 +1,7 @@
 # Nihongo Core（japanese-language-core）
 
+**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+
 Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文读音、假名与罗马音、
 读音-汉字对齐、活用形还原、逐句翻译契约、词典元数据、语法型检测与导出契约。
 

@@ -1,5 +1,7 @@
 # Nihongo Core（japanese-language-core）
 
+**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+
 Nihongo Core は Python 向けのプロフェッショナルな日本語処理ライブラリです：
 文脈付き読み、かな/ローマ字、読み-漢字アライメント、活用形復元、行単位翻訳
 コントラクト、辞書メタデータ、文法パターン検出、エクスポート契約。
