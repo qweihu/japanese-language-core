@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "japanese-language-core"
 version = "0.2.0"
-description = "Nihongo Core: shared Japanese language capabilities for Bunomi and Utayomi — contextual reading, kana/romaji, deinflection, line-preserving translation contracts, dictionary metadata, grammar patterns, and export contracts."
+description = "Nihongo Core: professional Japanese language processing — contextual reading, kana/romaji, deinflection, line-preserving translation contracts, dictionary metadata, grammar patterns, and export contracts."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

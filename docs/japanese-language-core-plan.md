@@ -76,7 +76,7 @@ from japanese_language_core.reading import ReadingToken, create_engine
 ```
 
 `ReadingToken(orig, hira, hepburn)` 与 `ReadingEngine.tokens(text)` 契约保持不变，
-通过兼容垫片 `japanese_reading_core` 在过渡期继续可用。
+消费方直接使用 `japanese_language_core.reading` 新命名空间。
 
 ### 新增（translation）
 
@@ -141,7 +141,7 @@ Anki 导出契约、离线优先与词典可选插件哲学。
 3. `pyproject.toml`：包名改为 `japanese-language-core`，optional-dependencies：
    `reading`（Sudachi/Fugashi/PyKakasi）、`translation`（纯标准库）、`all`；
    `__init__.py` 不 import 重模块，按需导入；
-4. 保留 `japanese_reading_core` 兼容垫片（re-export），过渡期后移除；
+4. 移除旧包名 `japanese_reading_core`（项目无早期用户，消费方直接迁移到新命名空间）；
 5. 更新 README（Nihongo Core 品牌、去掉 "not a translation system"、双语/三语）、
    LICENSE、契约测试、发布 tag（v0.2.0 或按新包名 v0.1.0）；
 6. 技能源 `skills/japanese-translation` 迁入本仓库；
@@ -154,5 +154,4 @@ Anki 导出契约、离线优先与词典可选插件哲学。
 
 - Phase 2 能力优先级（词典接口 vs 助词语法 vs 术语管理）；
 - BYO-LLM 客户端是否随 Phase 1 一起实现，还是先只定义 `Translator` 协议；
-- 兼容垫片保留时长；
 - 新包是否发布到 PyPI（目前以 GitHub tag 依赖为主）。

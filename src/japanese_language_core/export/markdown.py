@@ -17,11 +17,10 @@ def build_paired_markdown(
 ) -> str:
     """Render units as ``ruby line`` + ``translation line`` + blank line."""
 
-    blocks: list[str] = []
+    groups: list[str] = []
     for index, unit in enumerate(units):
         if not unit.source.strip() and not unit.translation.strip():
             continue
         source = (ruby_lines or {}).get(index, unit.source)
-        blocks.append(source)
-        blocks.append(unit.translation)
-    return "\n\n".join(blocks) + "\n"
+        groups.append(f"{source}\n{unit.translation}")
+    return "\n\n".join(groups) + "\n"
