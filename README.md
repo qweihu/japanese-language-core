@@ -1,32 +1,56 @@
+<div align="center">
+
 # japanese-reading-core
 
-`japanese-reading-core` 是 Bunomi 与 Utayomi 共用的日语词法分词和上下文读音引擎。
-它只负责把原文转换为可追溯的 `ReadingToken`，不负责振假名 HTML、歌词清洗、翻译、
-Markdown 排版或文件导出。
+**A source-preserving, context-aware Japanese reading engine for Python.**
 
-## 为什么独立成包
+Japanese text is not read one character at a time. This project combines
+morphological analysis, contextual readings, normalized kana, and a small
+stable token contract so applications can build reliable furigana, ruby,
+learning, search, and accessibility experiences on top of it.
 
-- Bunomi 负责普通日语学习文本的检测、Ruby 渲染、校验和安全导出。
-- Utayomi 负责歌词清洗、翻译和歌词专用排版。
-- 两个应用共享同一套 Sudachi 上下文读音和 PyKakasi 回退逻辑。
-- `orig` 原文保真契约由独立测试验证，避免两个应用各自维护一份引擎代码。
+[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-## 安装
+</div>
 
-从 GitHub 安装当前发布标签：
+## Overview
 
-```bash
-python3 -m pip install \
-  "japanese-reading-core @ git+https://github.com/qweihu/japanese-reading-core.git@v0.1.0"
+`japanese-reading-core` converts Japanese text into source-preserving
+`ReadingToken` values. Each token carries the original surface text, a
+hiragana reading, and an optional Hepburn romanization.
+
+The package focuses on the reading problem itself:
+
+- segmenting Japanese text into meaningful contextual units;
+- obtaining readings from a context-aware morphological engine;
+- providing a deterministic fallback when the preferred engine is unavailable;
+- preserving every input character, whitespace, and line ending;
+- exposing a small interface that application code can test and version.
+
+It does not guess readings in an LLM prompt, and it does not force every
+consumer to depend on a particular HTML or Markdown renderer.
+
+## How it works
+
+```text
+Japanese text
+    ↓
+line / whitespace preservation
+    ↓
+contextual tokenization
+    ↓
+reading normalization
+    ↓
+ReadingToken(orig, hira, hepburn)
+    ↓
+application-specific rendering or analysis
 ```
 
-本地开发安装：
+For example, the engine treats `降り止む` as a contextual lexical unit and
+returns `ふりやむ`. A consumer can then decide how to align that reading with
+the kanji and okurigana in its own output format.
 
-```bash
-python3 -m pip install -e .
-```
-
-## 最小接口
+## Core contract
 
 ```python
 from japanese_reading_core import ReadingToken, create_engine
@@ -38,48 +62,144 @@ assert all(isinstance(token, ReadingToken) for token in tokens)
 assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
 ```
 
-`ReadingToken` 字段：
+`ReadingToken` is intentionally small:
 
-| 字段 | 含义 |
+| Field | Meaning |
 | --- | --- |
-| `orig` | 原文表面片段；所有 token 拼接后必须等于输入 |
-| `hira` | 平假名读音；没有读音时为空字符串 |
-| `hepburn` | Hepburn 罗马音；没有读音时为空字符串 |
+| `orig` | The exact source surface fragment. All fragments reconstruct the input. |
+| `hira` | A normalized hiragana reading, or an empty string when no reading is available. |
+| `hepburn` | Optional Hepburn romanization of the reading. |
 
-`create_engine()` 支持：
+The public engine boundary is:
 
-- `auto`：优先使用 Sudachi，依赖不可用时回退 PyKakasi。
-- `sudachi`：严格要求 Sudachi 和其词典。
-- `pykakasi`：使用 Fugashi 分词和 PyKakasi 转换。
+```python
+class ReadingEngine(Protocol):
+    def tokens(self, text: str) -> Iterable[ReadingToken]: ...
+```
 
-应用层不应依赖 Sudachi 的 `Morpheme`、Fugashi 的 tag 对象或第三方词典对象；应用之间只
-通过 `ReadingEngine.tokens(text)` 和 `ReadingToken` 交换结果。
+Consumers should depend on this contract, not on Sudachi's `Morpheme`,
+Fugashi tag objects, or third-party dictionary internals.
 
-## 设计边界
+## Engine modes
 
-这个仓库不包含：
+| Mode | Behavior | Best for |
+| --- | --- | --- |
+| `auto` | Prefer Sudachi; fall back to PyKakasi if unavailable | Normal application use |
+| `sudachi` | Require Sudachi and its dictionary | Strict production and CI checks |
+| `pykakasi` | Use the Fugashi/PyKakasi fallback path | Compatibility and comparison |
 
-- Bunomi 的日语检测、Ruby 输出和导出策略；
-- Utayomi 的歌词来源处理、HTML 清洗、翻译和排版；
-- Yomitan/JMdict 的缓存文件、用户文本或 API 密钥。
+```python
+engine = create_engine("sudachi")
+```
 
-Yomitan 等词典可以在应用层作为候选和审计证据使用，但不能在这里静默覆盖上下文引擎的结果。
+If a strict engine cannot be initialized, the package raises
+`EngineUnavailableError`. It does not silently change a requested strict mode.
 
-## 测试
+## Installation
+
+Install the current release tag directly from GitHub:
+
+```bash
+python3 -m pip install \
+  "japanese-reading-core @ git+https://github.com/qweihu/japanese-reading-core.git@v0.1.0"
+```
+
+For local development:
+
+```bash
+git clone https://github.com/qweihu/japanese-reading-core.git
+cd japanese-reading-core
+python3 -m pip install -e .
+```
+
+The package currently supports Python 3.10+ and uses SudachiPy,
+`sudachidict-core`, Fugashi, UniDic-lite, and PyKakasi as its reading
+adapters.
+
+## Reading example
+
+```python
+from japanese_reading_core import create_engine
+
+text = "雨が降り止むまでは帰れない"
+engine = create_engine("auto")
+
+for token in engine.tokens(text):
+    print(token.orig, token.hira, token.hepburn)
+```
+
+The library returns reading data. Rendering it as HTML ruby, Markdown,
+plain-text annotations, or another representation remains the responsibility
+of the consuming application.
+
+## Design principles
+
+### Context before characters
+
+Japanese readings depend on lexical boundaries, inflection, and context. The
+engine asks a morphological analyzer for a reading of a contextual unit
+before an application performs any visual alignment.
+
+### Source preservation is an invariant
+
+Whitespace, punctuation, Latin text, kana, line endings, and unknown fragments
+must remain observable. A consumer can reject or report a broken result by
+checking the concatenated `orig` fields.
+
+### Evidence and rendering stay separate
+
+Dictionary data can be used by a higher-level application as candidate or
+audit evidence. This package does not silently overwrite the primary engine's
+result with an unrelated dictionary lookup, and it does not bundle user data,
+dictionary caches, or application-specific policy.
+
+### Small interfaces are easier to audit
+
+The package exposes adapters and normalized values, not the internal object
+graphs of its underlying NLP libraries. This keeps integrations testable and
+makes engine upgrades visible through versioned behavior changes.
+
+## Scope and non-goals
+
+This repository is intentionally not:
+
+- a Japanese language detector;
+- a furigana or HTML renderer;
+- a translation system;
+- a lyric acquisition or cleaning tool;
+- a Yomitan/JMdict distribution;
+- a user-data store or remote service.
+
+Those concerns can be implemented by separate layers without changing the
+reading contract.
+
+## Testing and reproducibility
+
+Run the unit tests with:
 
 ```bash
 python3 -m unittest discover -s tests -v
+```
+
+The test suite checks contextual readings, PyKakasi selection, source
+reconstruction, whitespace and newline preservation, kana normalization, and
+invalid engine handling. Build a wheel with:
+
+```bash
 python3 -m build --wheel
 ```
 
-测试重点包括：原文 token 拼接、Sudachi 上下文读音、PyKakasi 回退、换行/空白保留和错误边界。
+Reading behavior is versioned. Applications should depend on a release tag or
+a bounded package version rather than an unreviewed moving branch.
 
-## 版本策略
+## Roadmap
 
-应用应依赖明确的版本范围或 Git 标签，而不是默认跟随未审计的 `main`：
+- expand reviewed contextual-reading fixtures;
+- add explicit diagnostics for ambiguous or unavailable readings;
+- evaluate optional dictionary evidence without coupling it to the core API;
+- publish stable package releases and compatibility notes;
+- measure accuracy on independently maintained Japanese corpora.
 
-```text
-japanese-reading-core>=0.1.0,<0.2.0
-```
+## License
 
-每次读音行为发生变化时，应同时更新版本、测试样本和变更说明。
+MIT License. See [LICENSE](LICENSE).
