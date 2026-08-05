@@ -210,6 +210,8 @@ print(to_romaji("がっこう"))     # → gakkou    （促音双写）
 罗马音转换器是务实的 Hepburn 实现；生产级罗马音建议使用引擎的
 `hepburn` 字段（需 `[reading]` 扩展）。
 
+<p align="center"><img src="screenshot/zh/kana.png" alt="假名与罗马音" width="820"></p>
+
 ## 读音-汉字对齐
 
 `align_reading(term, reading)` 把假名读音分配到汉字——ruby 渲染背后的分布问题：
@@ -257,6 +259,8 @@ for candidate in deinflect("食べていました"):
 后缀——ます/ない/た/て/ている/すぎる/やすい 等——结尾有歧义时输出多个候选
 （行った → 行く/行つ/行る/行う）。有词典数据时用 `dictionary.lookup_terms`
 过滤候选。
+
+<p align="center"><img src="screenshot/zh/inflection.png" alt="活用形" width="820"></p>
 
 ## 翻译（translation）
 
@@ -500,6 +504,8 @@ for sentence in examples:
 
 读取 Tatoeba 句表与链接导出（CC BY 2.0）；下载与解压由调用方负责。
 
+<p align="center"><img src="screenshot/zh/sentences.png" alt="例句句库" width="820"></p>
+
 ## 语法（grammar）
 
 确定性的表层检测——快速可测，不替代形态学分析：
@@ -526,6 +532,8 @@ print([(m.name, m.matched) for m in find_grammar("食べているところです
 （ている/ておく/てしまう/てもいい/てはいけない/てほしい）、义务
 （なければならない/ないといけない）、可能（ことができる）、条件
 （たら/れば）等。
+
+<p align="center"><img src="screenshot/zh/grammar.png" alt="语法检测" width="820"></p>
 
 ## 导出（export）
 
@@ -590,6 +598,8 @@ unit = MiningUnit(
 )
 payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
 ```
+
+<p align="center"><img src="screenshot/zh/export.png" alt="导出契约" width="820"></p>
 
 ## CLI 参考
 

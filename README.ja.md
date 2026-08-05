@@ -143,6 +143,8 @@ print(to_romaji("しんぶん"))     # shimbun
 print(to_romaji("がっこう"))     # gakkou
 ```
 
+<p align="center"><img src="screenshot/ja/kana.png" alt="かな・ローマ字" width="820"></p>
+
 ## アライメントと活用形
 
 ```python
@@ -159,6 +161,8 @@ for candidate in deinflect("食べていました"):
     print(candidate.word, "|", candidate.reason)
 # 食べる | past + polite + progressive
 ```
+
+<p align="center"><img src="screenshot/ja/inflection.png" alt="活用形" width="820"></p>
 
 ## 辞書と JLPT
 
@@ -194,6 +198,8 @@ print([(m.name, m.matched) for m in find_grammar("食べているところです
 # [('te-iru', 'ている')]
 ```
 
+<p align="center"><img src="screenshot/ja/grammar.png" alt="文法" width="820"></p>
+
 ## エクスポート
 
 ```python
@@ -217,6 +223,8 @@ print(build_paired_markdown([TranslationUnit("日本語を勉強する。", "学
 日本語を勉強する。
 学习日语。
 ```
+
+<p align="center"><img src="screenshot/ja/export.png" alt="エクスポート" width="820"></p>
 
 ## CLI リファレンス
 

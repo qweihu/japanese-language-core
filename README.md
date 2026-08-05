@@ -222,6 +222,8 @@ print(to_romaji("がっこう"))     # → gakkou    (small tsu doubles consonan
 The romaji converter is a pragmatic Hepburn reader. For production-grade
 romanization, use the engine's `hepburn` field (requires the `[reading]` extra).
 
+<p align="center"><img src="screenshot/en/kana.png" alt="Kana and romaji" width="820"></p>
+
 ## Furigana alignment
 
 `align_reading(term, reading)` distributes a kana reading across the kanji of
@@ -275,6 +277,8 @@ polite past`.) The rule engine strips common suffixes — ます/ない/た/て/
 すぎる/やすい and more — and emits multiple candidates when the ending is
 ambiguous (行った → 行く/行つ/行る/行う). Filter candidates with
 `dictionary.lookup_terms` when you have dictionary data.
+
+<p align="center"><img src="screenshot/en/inflection.png" alt="Inflection" width="820"></p>
 
 ## Translation
 
@@ -530,6 +534,8 @@ for sentence in examples:
 Reads Tatoeba sentence/link exports (CC BY 2.0); fetching and decompressing
 the export files is the caller's concern.
 
+<p align="center"><img src="screenshot/en/sentences.png" alt="Sentence bank" width="820"></p>
+
 ## Grammar
 
 Deterministic, surface-level helpers — fast and testable, not a replacement
@@ -557,6 +563,8 @@ Particle detection recognizes kana runs that are, or end with, a known
 particle. Grammar patterns include te-form constructions (ている/ておく/
 てしまう/てもいい/てはいけない/てほしい), obligations (なければならない/
 ないといけない), potential (ことができる), conditionals (たら/れば), and more.
+
+<p align="center"><img src="screenshot/en/grammar.png" alt="Grammar" width="820"></p>
 
 ## Export
 
@@ -623,6 +631,8 @@ unit = MiningUnit(
 )
 payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
 ```
+
+<p align="center"><img src="screenshot/en/export.png" alt="Export" width="820"></p>
 
 ## CLI reference
 

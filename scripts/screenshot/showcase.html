@@ -87,6 +87,20 @@
   .step .name { font-size: 14px; font-weight: 700; }
   .step .desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
   .flow-arrow { align-self: center; color: #c3c9d6; font-size: 20px; }
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row {
+    display: flex; align-items: center; gap: 14px; background: #fbfcff;
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px;
+  }
+  .row .in { font-size: 18px; font-weight: 600; flex: 1; }
+  .row .arrow { color: #c3c9d6; }
+  .row .out { font-size: 15px; color: var(--ink); flex: 1.2; }
+  .row .note { font-size: 12px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .panel { background: #f6f8fd; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .panel .panel-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--muted); }
+  .panel .big { font-size: 20px; font-weight: 700; }
+  .panel .small { font-size: 13px; color: var(--muted); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -102,6 +116,55 @@
       <div class="token"><div class="orig">は</div><div class="hira">は</div><div class="rom">ha</div></div>
       <div class="token"><div class="orig">帰れ</div><div class="hira">かえれ</div><div class="rom">kaere</div></div>
       <div class="token"><div class="orig">ない</div><div class="hira">ない</div><div class="rom">nai</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-kana">
+    <div class="section-title"><span class="dot"></span><span data-i18n="kana-title">假名与罗马音（Kana）</span></div>
+    <div class="section-sub" data-i18n="kana-sub">纯标准库转换：片假名 → 平假名 → Hepburn</div>
+    <div class="rows">
+      <div class="row"><span class="in">ニホンゴ</span><span class="arrow">→</span><span class="out">にほんご</span></div>
+      <div class="row"><span class="in">しんぶん</span><span class="arrow">→</span><span class="out">shimbun <span class="note">（ん → m）</span></span></div>
+      <div class="row"><span class="in">がっこう</span><span class="arrow">→</span><span class="out">gakkou <span class="note">（促音）</span></span></div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-inflection">
+    <div class="section-title"><span class="dot blue"></span><span data-i18n="inflection-title">活用形（Inflection）</span></div>
+    <div class="section-sub" data-i18n="inflection-sub">还原（deinflect）与生成（conjugate）双向闭环</div>
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-title" data-i18n="inflection-reverse">还原</div>
+        <div class="big">食べていました</div>
+        <div class="small">→ 食べる（past + polite + progressive）</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title" data-i18n="inflection-forward">生成</div>
+        <div class="chips">
+          <span class="chip"><b>ます</b>食べます</span>
+          <span class="chip"><b>ない</b>食べない</span>
+          <span class="chip"><b>て</b>食べて</span>
+          <span class="chip"><b>た</b>食べた</span>
+          <span class="chip"><b>可能</b>食べられる</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-grammar">
+    <div class="section-title"><span class="dot green"></span><span data-i18n="grammar-title">语法检测（Grammar）</span></div>
+    <div class="section-sub" data-i18n="grammar-sub">助词与常见语法型的确定性检测</div>
+    <div class="rows">
+      <div class="row"><span class="in">私は東京へ行きます。</span><span class="arrow">→</span><span class="out">助词：は・へ</span></div>
+      <div class="row"><span class="in">食べているところです。</span><span class="arrow">→</span><span class="out">模式：te-iru</span></div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-sentences">
+    <div class="section-title"><span class="dot"></span><span data-i18n="sentences-title">例句句库（Sentence Bank）</span></div>
+    <div class="section-sub" data-i18n="sentences-sub">Tatoeba 句对（CC BY 2.0）：例句 + 译文</div>
+    <div class="rows">
+      <div class="row"><span class="in"><ruby>日本語<rt>にほんご</rt></ruby>を<ruby>勉強<rt>べんきょう</rt></ruby>する。</span><span class="arrow">→</span><span class="out" data-i18n="sentences-example">学习日语。</span></div>
     </div>
   </section>
 
@@ -142,6 +205,18 @@
     </div>
   </section>
 
+  <section class="section" id="demo-export">
+    <div class="section-title"><span class="dot blue"></span><span data-i18n="export-title">导出契约（Export）</span></div>
+    <div class="section-sub" data-i18n="export-sub">MiningUnit → Anki TSV / AnkiConnect payload</div>
+    <div class="rows">
+      <div class="row">
+        <span class="in">日本語を勉強する。</span>
+        <span class="arrow">→</span>
+        <span class="out">Expression: 日本語 · Reading: にほんご · Tags: [jlptN5]</span>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="demo-cli">
     <div class="section-title"><span class="dot blue"></span><span data-i18n="cli-title">CLI（Agent 优先）</span></div>
     <div class="section-sub" data-i18n="cli-sub">确定性操作走 CLI：校验、翻译、语言列表</div>
@@ -173,6 +248,19 @@
     zh: {
       "reading-title": "读音（Reading）",
       "reading-sub": "保原文的分词 + 上下文读音：降り止む → ふりやむ",
+      "kana-title": "假名与罗马音（Kana）",
+      "kana-sub": "纯标准库转换：片假名 → 平假名 → Hepburn",
+      "inflection-title": "活用形（Inflection）",
+      "inflection-sub": "还原（deinflect）与生成（conjugate）双向闭环",
+      "inflection-reverse": "还原",
+      "inflection-forward": "生成",
+      "grammar-title": "语法检测（Grammar）",
+      "grammar-sub": "助词与常见语法型的确定性检测",
+      "sentences-title": "例句句库（Sentence Bank）",
+      "sentences-sub": "Tatoeba 句对（CC BY 2.0）：例句 + 译文",
+      "sentences-example": "学习日语。",
+      "export-title": "导出契约（Export）",
+      "export-sub": "MiningUnit → Anki TSV / AnkiConnect payload",
       "translation-title": "翻译与校验（Translation）",
       "translation-sub": "逐句契约：行数对应、假名漏译与占位符校验",
       "badge-ok": "校验通过",
@@ -192,6 +280,19 @@
     ja: {
       "reading-title": "読み（Reading）",
       "reading-sub": "原文保持の分かち書き＋文脈読み：降り止む → ふりやむ",
+      "kana-title": "かな・ローマ字（Kana）",
+      "kana-sub": "標準ライブラリのみ：カタカナ → ひらがな → ヘボン式",
+      "inflection-title": "活用形（Inflection）",
+      "inflection-sub": "復元（deinflect）と生成（conjugate）の双方向",
+      "inflection-reverse": "復元",
+      "inflection-forward": "生成",
+      "grammar-title": "文法（Grammar）",
+      "grammar-sub": "助詞と定型パターンの決定的検出",
+      "sentences-title": "例文バンク（Sentence Bank）",
+      "sentences-sub": "Tatoeba 文対（CC BY 2.0）：例文＋訳",
+      "sentences-example": "日本語を勉強する。",
+      "export-title": "エクスポート（Export）",
+      "export-sub": "MiningUnit → Anki TSV / AnkiConnect payload",
       "translation-title": "翻訳と検証（Translation）",
       "translation-sub": "行単位契約：行数対応・仮名漏れ・プレースホルダー検証",
       "badge-ok": "検証OK",
@@ -211,6 +312,19 @@
     en: {
       "reading-title": "Reading",
       "reading-sub": "Source-preserving tokenization + contextual readings: 降り止む → ふりやむ",
+      "kana-title": "Kana & romaji",
+      "kana-sub": "Pure stdlib conversion: katakana → hiragana → Hepburn",
+      "inflection-title": "Inflection",
+      "inflection-sub": "Two-way: deinflect (restore) + conjugate (generate)",
+      "inflection-reverse": "Restore",
+      "inflection-forward": "Generate",
+      "grammar-title": "Grammar",
+      "grammar-sub": "Deterministic particle and pattern detection",
+      "sentences-title": "Sentence bank",
+      "sentences-sub": "Tatoeba pairs (CC BY 2.0): example + translation",
+      "sentences-example": "I study Japanese.",
+      "export-title": "Export",
+      "export-sub": "MiningUnit → Anki TSV / AnkiConnect payload",
       "translation-title": "Translation & validation",
       "translation-sub": "Line-preserving contract: pairing, kana-leak and placeholder checks",
       "badge-ok": "Validated",
