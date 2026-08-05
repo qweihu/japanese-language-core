@@ -40,6 +40,11 @@ Nihongo Core は Python 向けのプロフェッショナルな日本語処理�
 | `japanese_language_core.export.mining` | マイニング | 句 → カード → payload 契約 |
 | `japanese_language_core.sentences` | 例文バンク | Tatoeba 例文バンク（CC BY 2.0） |
 
+<p align="center">
+  <img src="screenshot/ja/reading.png" alt="読みの例" width="820">
+  <br><sub>原文保持の分かち書きと文脈読み</sub>
+</p>
+
 ## シナリオナビ
 
 読み・翻訳・活用形は本番、辞書・文法・難易度は実験的、例文バンク

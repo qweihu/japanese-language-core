@@ -46,6 +46,11 @@ It is built around two ideas:
 > their interfaces are tested, yet no bundled consumer depends on them yet —
 > build on them at your own pace.
 
+<p align="center">
+  <img src="screenshot/en/reading.png" alt="Reading example" width="820">
+  <br><sub>Source-preserving tokenization with contextual readings</sub>
+</p>
+
 ## Install
 
 Python 3.10+.
