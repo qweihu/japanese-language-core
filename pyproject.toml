@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "japanese-language-core"
-version = "0.2.0"
+version = "0.3.0"
 description = "Nihongo Core: professional Japanese language processing — contextual reading, kana/romaji, deinflection, line-preserving translation contracts, dictionary metadata, grammar patterns, and export contracts."
 readme = "README.md"
 requires-python = ">=3.10"

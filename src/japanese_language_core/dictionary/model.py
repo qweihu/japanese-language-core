@@ -28,6 +28,7 @@ class TermEntry:
 
     expression: str
     reading: str = ""
+    source: str = ""
     definitions: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     rules: list[str] = field(default_factory=list)
@@ -43,6 +44,7 @@ class KanjiEntry:
     """A kanji entry: readings, meanings, stats, and frequency."""
 
     character: str
+    source: str = ""
     onyomi: list[str] = field(default_factory=list)
     kunyomi: list[str] = field(default_factory=list)
     meanings: list[str] = field(default_factory=list)

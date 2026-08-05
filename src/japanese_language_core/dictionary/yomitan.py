@@ -20,6 +20,16 @@ from .model import FrequencyTag, KanjiEntry, PitchAccent, TagEntry, TermEntry
 from .jmnedict import looks_like_name, to_name_entry
 
 
+def _readings(value: object) -> tuple[str, ...]:
+    """Normalize kanji readings that may be a list or a whitespace string."""
+
+    if isinstance(value, list):
+        return tuple(str(item) for item in value if item)
+    if isinstance(value, str):
+        return tuple(item for item in value.split() if item)
+    return ()
+
+
 @dataclass(frozen=True)
 class DictionaryIndex:
     """Metadata from ``index.json``."""
@@ -37,37 +47,68 @@ class YomitanDictionary:
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        with zipfile.ZipFile(self.path) as archive:
-            self._entries: dict[str, list[list[object]]] = {}
-            self._meta: dict[str, list[list[object]]] = {}
-            self._index = self._read_index(archive)
-            for name in archive.namelist():
-                if name.startswith("term_bank_"):
-                    self._entries.setdefault("term", []).extend(
-                        self._load_json(archive, name)
-                    )
-                elif name.startswith("kanji_bank_"):
-                    self._entries.setdefault("kanji", []).extend(
-                        self._load_json(archive, name)
-                    )
-                elif name.startswith("tag_bank_"):
-                    self._entries.setdefault("tag", []).extend(
-                        self._load_json(archive, name)
-                    )
-                elif name.startswith("term_meta_bank_"):
-                    self._meta.setdefault("term", []).extend(
-                        self._load_json(archive, name)
-                    )
-                elif name.startswith("kanji_meta_bank_"):
-                    self._meta.setdefault("kanji", []).extend(
-                        self._load_json(archive, name)
-                    )
+        if self.path.is_dir():
+            self._index, self._entries, self._meta = self._load_directory()
+        else:
+            self._index, self._entries, self._meta = self._load_zip()
         self._tag_defs = self._build_tags()
         self._term_meta_index = self._build_term_meta_index()
         self._kanji_freq = self._build_kanji_freq()
         self._term_index = self._build_term_index()
         self._kanji_index = self._build_kanji_index()
         self._sorted_expressions = sorted(self._term_index)
+
+    def _load_zip(self) -> tuple[DictionaryIndex, dict[str, list[list[object]]], dict[str, list[list[object]]]]:
+        entries: dict[str, list[list[object]]] = {}
+        meta: dict[str, list[list[object]]] = {}
+        with zipfile.ZipFile(self.path) as archive:
+            index = self._read_index(archive)
+            for name in archive.namelist():
+                if name.startswith("term_bank_"):
+                    entries.setdefault("term", []).extend(
+                        self._load_json(archive, name)
+                    )
+                elif name.startswith("kanji_bank_"):
+                    entries.setdefault("kanji", []).extend(
+                        self._load_json(archive, name)
+                    )
+                elif name.startswith("tag_bank_"):
+                    entries.setdefault("tag", []).extend(
+                        self._load_json(archive, name)
+                    )
+                elif name.startswith("term_meta_bank_"):
+                    meta.setdefault("term", []).extend(
+                        self._load_json(archive, name)
+                    )
+                elif name.startswith("kanji_meta_bank_"):
+                    meta.setdefault("kanji", []).extend(
+                        self._load_json(archive, name)
+                    )
+        return index, entries, meta
+
+    def _load_directory(self) -> tuple[DictionaryIndex, dict[str, list[list[object]]], dict[str, list[list[object]]]]:
+        index_path = self.path / "index.json"
+        if not index_path.is_file():
+            raise FileNotFoundError(f"目录缺少 index.json: {self.path}")
+        index = DictionaryIndex(
+            title=str(json.loads(index_path.read_text(encoding="utf-8")).get("title", self.path.name)),
+            format_version=3,
+        )
+        entries: dict[str, list[list[object]]] = {}
+        meta: dict[str, list[list[object]]] = {}
+
+        def load_jsons(prefix: str) -> list[list[object]]:
+            rows: list[list[object]] = []
+            for bank in sorted(self.path.glob(f"{prefix}_*.json")):
+                rows.extend(json.loads(bank.read_text(encoding="utf-8")))
+            return rows
+
+        entries["term"] = load_jsons("term_bank")
+        entries["kanji"] = load_jsons("kanji_bank")
+        entries["tag"] = load_jsons("tag_bank")
+        meta["term"] = load_jsons("term_meta_bank")
+        meta["kanji"] = load_jsons("kanji_meta_bank")
+        return index, entries, meta
 
     @staticmethod
     def _read_index(archive: zipfile.ZipFile) -> DictionaryIndex:
@@ -193,6 +234,7 @@ class YomitanDictionary:
             entry = TermEntry(
                 expression=expression,
                 reading=reading,
+                source=self.index.title,
                 definitions=definitions,
                 tags=[*definition_tags, *term_tags],
                 rules=rules,
@@ -211,8 +253,8 @@ class YomitanDictionary:
             if not row:
                 continue
             character = str(row[0])
-            onyomi = list(row[1]) if len(row) > 1 and isinstance(row[1], list) else []
-            kunyomi = list(row[2]) if len(row) > 2 and isinstance(row[2], list) else []
+            onyomi = list(_readings(row[1] if len(row) > 1 else None))
+            kunyomi = list(_readings(row[2] if len(row) > 2 else None))
             tags = list(row[3]) if len(row) > 3 and isinstance(row[3], list) else []
             meanings = list(row[4]) if len(row) > 4 and isinstance(row[4], list) else []
             stats = dict(row[5]) if len(row) > 5 and isinstance(row[5], dict) else {}
@@ -224,6 +266,7 @@ class YomitanDictionary:
             index.setdefault(character, []).append(
                 KanjiEntry(
                     character=character,
+                    source=self.index.title,
                     onyomi=onyomi,
                     kunyomi=kunyomi,
                     meanings=meanings,
@@ -288,6 +331,9 @@ class YomitanDictionary:
 
     def all_expressions(self) -> list[str]:
         return list(self._term_index)
+
+    def all_characters(self) -> list[str]:
+        return list(self._kanji_index)
 
     def validate(self) -> list[str]:
         """Return structural validation errors for the bundle."""

@@ -99,6 +99,57 @@ class YomitanDictionaryTests(unittest.TestCase):
             [2, 3], [accent.position for accent in term.pitch_accents]
         )
 
+    def test_directory_loading_and_source(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "dict"
+            root.mkdir()
+            (root / "index.json").write_text(
+                json.dumps({"title": "Dir Test", "format_version": 3}),
+                encoding="utf-8",
+            )
+            (root / "term_bank_1.json").write_text(
+                json.dumps(
+                    [["日本語", "にほんご", [], [], 0, ["Japanese language"], 1, []]]
+                ),
+                encoding="utf-8",
+            )
+            (root / "kanji_bank_1.json").write_text(
+                json.dumps([["日", ["ニチ"], ["ひ"], [], ["day"], {"grade": 1}]]),
+                encoding="utf-8",
+            )
+            dictionary = YomitanDictionary(root)
+            term = dictionary.lookup_terms("日本語")[0]
+            self.assertEqual("Dir Test", term.source)
+            self.assertEqual(["日"], dictionary.all_characters())
+            kanji = dictionary.lookup_kanji("日")[0]
+            self.assertEqual("Dir Test", kanji.source)
+            self.assertEqual([], dictionary.validate())
+
+    def test_kanji_reading_string_variant(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "dict"
+            root.mkdir()
+            (root / "index.json").write_text(
+                json.dumps({"title": "String Readings", "format_version": 3}),
+                encoding="utf-8",
+            )
+            (root / "kanji_bank_1.json").write_text(
+                json.dumps(
+                    [["学", "ガク", "まな.ぶ", "jouyou", ["study"], {"grade": 1}]]
+                ),
+                encoding="utf-8",
+            )
+            dictionary = YomitanDictionary(root)
+            kanji = dictionary.lookup_kanji("学")[0]
+            self.assertEqual(("ガク",), tuple(kanji.onyomi))
+            self.assertEqual(("まな.ぶ",), tuple(kanji.kunyomi))
+
     def test_furigana_extension_and_search(self):
         path = "/private/tmp/fixture-furigana-yomitan.zip"
         with zipfile.ZipFile(path, "w") as archive:
