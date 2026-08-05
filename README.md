@@ -18,17 +18,17 @@ It is built around two ideas:
 
 ## Feature overview
 
-| Module | What it provides |
+| Module name | What it provides |
 | --- | --- |
-| [`reading`](#reading) | Source-preserving tokenization + contextual readings (`auto` / `sudachi` / `pykakasi`) |
-| [`reading.kana`](#kana-and-romaji) | Hiragana/katakana conversion, width normalization, Hepburn romaji |
-| [`reading.alignment`](#furigana-alignment) | Distribute readings across kanji for ruby rendering |
-| [`reading.deinflect`](#deinflection) | Conjugated form → dictionary-form candidates |
-| [`translation`](#translation) | Line-preserving contract, validation, language registry, glossary checks |
-| [`translation.provider`](#byo-llm-translation) | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
-| [`dictionary`](#dictionary) | Yomitan-format dictionary reader + JLPT difficulty analysis |
-| [`grammar`](#grammar) | Particle and common grammar-pattern detection |
-| [`export`](#export) | Anki note contract and paired Markdown layout |
+| [`japanese_language_core.reading`](#reading) | Source-preserving tokenization + contextual readings (`auto` / `sudachi` / `pykakasi`) |
+| [`japanese_language_core.reading.kana`](#kana-and-romaji) | Hiragana/katakana conversion, width normalization, Hepburn romaji |
+| [`japanese_language_core.reading.alignment`](#furigana-alignment) | Distribute readings across kanji for ruby rendering |
+| [`japanese_language_core.reading.deinflect`](#deinflection) | Conjugated form → dictionary-form candidates |
+| [`japanese_language_core.translation`](#translation) | Line-preserving contract, validation, language registry, glossary checks |
+| [`japanese_language_core.translation.provider`](#byo-llm-translation) | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
+| [`japanese_language_core.dictionary`](#dictionary) | Yomitan-format dictionary reader + JLPT difficulty analysis |
+| [`japanese_language_core.grammar`](#grammar) | Particle and common grammar-pattern detection |
+| [`japanese_language_core.export`](#export) | Anki note contract and paired Markdown layout |
 
 > **Capability maturity.** `reading` and `translation` are the production
 > core. `dictionary`, `grammar`, and `export` are stable but experimental:
@@ -99,18 +99,9 @@ for token in tokens:
     print(token.orig, token.hira, token.hepburn)
 ```
 
-The engine preserves the source exactly, so you get a guaranteed contract plus
-readings:
-
-```text
-雨 あめ ame
-が が ga
-降り止む ふりやむ furiyamu
-まで まで made
-は は ha
-帰れ かえれ kaere
-ない ない nai
-```
+Input `雨が降り止むまでは帰れない` → readings
+`あめ / が / ふりやむ / まで / は / かえれ / ない`
+(Hepburn: `ame / ga / furiyamu / made / ha / kaere / nai`).
 
 ```python
 assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
@@ -137,11 +128,9 @@ and `translation.txt`:
 一起走吧。
 ```
 
-you get:
-
-```text
-校验通过：2 行翻译，0 个警告
-```
+Pairs that line up one-to-one pass with exit code 0; a translation line
+leaking kana yields a warning, and mismatched line counts fail — see
+"Validation" below.
 
 ### 3. Translate with your own LLM endpoint
 
@@ -317,25 +306,11 @@ python3 -m japanese_language_core.translation validate \
   --source source.txt --translation translation.txt --paired
 ```
 
-OK:
-
-```text
-校验通过：2 行翻译，0 个警告
-```
-
-Kana leak (a line left untranslated):
-
-```text
-[警告] 翻译行 2: 出现假名 3 处，可能是漏译（专名/引用除外）
-校验通过：2 行翻译，1 个警告
-```
-
-Line mismatch:
-
-```text
-[错误] 行数不匹配：源 2 行，翻译 1 行
-校验失败：1 个错误，0 个警告
-```
+| Situation | Outcome |
+| --- | --- |
+| One-to-one lines, no kana leak | Pass, exit code 0 |
+| Kana leak in a translation line | Warning; exit code 3 with `--strict-warnings` |
+| Line-count mismatch or structural error | Failure, exit code 1 |
 
 Exit codes: `0` OK, `1` structural errors, `3` warnings only (with
 `--strict-warnings`).

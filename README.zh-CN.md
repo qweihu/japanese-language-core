@@ -14,17 +14,17 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 
 ## 功能总览
 
-| 模块 | 内容 |
+| 模块名称 | 内容 |
 | --- | --- |
-| [`reading`](#读音reading) | 保原文分词 + 上下文读音（`auto` / `sudachi` / `pykakasi`） |
-| [`reading.kana`](#假名与罗马音) | 假名转换、全半角归一、Hepburn 罗马音 |
-| [`reading.alignment`](#读音-汉字对齐) | 读音分配到汉字（ruby 渲染） |
-| [`reading.deinflect`](#活用形还原) | 变形 → 辞書形 候选 |
-| [`translation`](#翻译translation) | 逐句契约、校验、语言注册表、术语一致性 |
-| [`translation.provider`](#byo-llm-翻译) | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
-| [`dictionary`](#词典dictionary) | Yomitan 词典读取 + JLPT 难度分析 |
-| [`grammar`](#语法grammar) | 助词与常见语法型检测 |
-| [`export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
+| [`japanese_language_core.reading`](#读音reading) | 保原文分词 + 上下文读音（`auto` / `sudachi` / `pykakasi`） |
+| [`japanese_language_core.reading.kana`](#假名与罗马音) | 假名转换、全半角归一、Hepburn 罗马音 |
+| [`japanese_language_core.reading.alignment`](#读音-汉字对齐) | 读音分配到汉字（ruby 渲染） |
+| [`japanese_language_core.reading.deinflect`](#活用形还原) | 变形 → 辞書形 候选 |
+| [`japanese_language_core.translation`](#翻译translation) | 逐句契约、校验、语言注册表、术语一致性 |
+| [`japanese_language_core.translation.provider`](#byo-llm-翻译) | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
+| [`japanese_language_core.dictionary`](#词典dictionary) | Yomitan 词典读取 + JLPT 难度分析 |
+| [`japanese_language_core.grammar`](#语法grammar) | 助词与常见语法型检测 |
+| [`japanese_language_core.export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
 
 > **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
 > `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
@@ -90,17 +90,9 @@ for token in tokens:
     print(token.orig, token.hira, token.hepburn)
 ```
 
-引擎严格保留原文，所以你同时得到契约保证和读音：
-
-```text
-雨 あめ ame
-が が ga
-降り止む ふりやむ furiyamu
-まで まで made
-は は ha
-帰れ かえれ kaere
-ない ない nai
-```
+输入 `雨が降り止むまでは帰れない`，输出读音
+`あめ / が / ふりやむ / まで / は / かえれ / ない`
+（Hepburn：`ame / ga / furiyamu / made / ha / kaere / nai`）。
 
 ```python
 assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
@@ -127,11 +119,8 @@ python3 -m japanese_language_core.translation validate \
 一起走吧。
 ```
 
-得到：
-
-```text
-校验通过：2 行翻译，0 个警告
-```
+两行一一对应时校验通过（退出码 0）；翻译行残留假名会得到警告，行数不齐
+会报错——详见下方「结构校验」。
 
 ### 3. 用自带 LLM 端点翻译
 
@@ -292,32 +281,18 @@ print(warnings)  # []
 - 假名漏译（翻译行残留平假名/片假名）；
 - 术语一致性（可选）。
 
-CLI 输出示例：
+CLI：
 
 ```bash
 python3 -m japanese_language_core.translation validate \
   --source source.txt --translation translation.txt --paired
 ```
 
-通过：
-
-```text
-校验通过：2 行翻译，0 个警告
-```
-
-假名漏译（某行没翻）：
-
-```text
-[警告] 翻译行 2: 出现假名 3 处，可能是漏译（专名/引用除外）
-校验通过：2 行翻译，1 个警告
-```
-
-行数不匹配：
-
-```text
-[错误] 行数不匹配：源 2 行，翻译 1 行
-校验失败：1 个错误，0 个警告
-```
+| 情况 | 结论 |
+| --- | --- |
+| 行数一一对应、无残留假名 | 校验通过，退出码 0 |
+| 翻译行残留假名（漏译） | 警告；`--strict-warnings` 下退出码 3 |
+| 行数不匹配或结构错误 | 错误，退出码 1 |
 
 退出码：`0` 通过、`1` 结构错误、`3` 仅警告（`--strict-warnings`）。
 

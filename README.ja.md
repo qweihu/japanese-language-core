@@ -58,15 +58,9 @@ for token in tokens:
     print(token.orig, token.hira, token.hepburn)
 ```
 
-```text
-雨 あめ ame
-が が ga
-降り止む ふりやむ furiyamu
-まで まで made
-は は ha
-帰れ かえれ kaere
-ない ない nai
-```
+入力 `雨が降り止むまでは帰れない` → 読み
+`あめ / が / ふりやむ / まで / は / かえれ / ない`
+（ヘボン式：`ame / ga / furiyamu / made / ha / kaere / nai`）。
 
 翻訳検証：
 
@@ -75,9 +69,8 @@ python3 -m japanese_language_core.translation validate \
   --source source.txt --translation translation.txt --paired
 ```
 
-```text
-校验通过：2 行翻译，0 个警告
-```
+1 行ずつ対応していれば検証 OK（終了コード 0）。仮名が残る翻訳行は警告、
+行数不一致はエラーになります。
 
 BYO-LLM 翻訳：
 
