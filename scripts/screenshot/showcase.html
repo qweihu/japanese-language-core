@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Nihongo Core 效果预览</title>
+<style>
+  :root {
+    --ink: #1f2430; --muted: #6b7280; --accent: #e25563; --accent-2: #5b8def;
+    --green: #2fb38b; --card: #ffffff; --line: #e5e7ef;
+    --bg: linear-gradient(160deg, #f7f8fc 0%, #eef1f8 100%); --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+      "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink); padding: 40px; -webkit-font-smoothing: antialiased;
+  }
+  .section {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(31, 36, 48, 0.08);
+    padding: 28px 32px; margin: 0 0 36px; max-width: 860px;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 17px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 6px;
+  }
+  .section-title .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(226,85,99,0.15); }
+  .section-title .dot.blue { background: var(--accent-2); box-shadow: 0 0 0 4px rgba(91,141,239,0.15); }
+  .section-title .dot.green { background: var(--green); box-shadow: 0 0 0 4px rgba(47,179,139,0.15); }
+  .section-sub { color: var(--muted); font-size: 13px; margin: 0 0 18px 20px; }
+  ruby { ruby-align: center; }
+  rt { font-size: 0.55em; color: var(--accent); font-weight: 600; letter-spacing: 0.02em; }
+  .tokens { display: flex; flex-wrap: wrap; gap: 10px; }
+  .token {
+    background: #f6f8fd; border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 14px; min-width: 96px; text-align: center;
+  }
+  .token .orig { font-size: 22px; font-weight: 700; letter-spacing: 0.03em; }
+  .token .hira { font-size: 14px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+  .token .rom { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .pair { border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; background: #fbfcff; display: flex; align-items: center; gap: 14px; }
+  .pair + .pair { margin-top: 12px; }
+  .pair .src { font-size: 20px; font-weight: 600; flex: 1; }
+  .pair .arrow { color: #c3c9d6; }
+  .pair .dst { font-size: 16px; color: var(--ink); flex: 1; }
+  .badge {
+    font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+  }
+  .badge.ok { color: #0f7a5c; background: #e2f7ef; }
+  .badge.warn { color: #a16207; background: #fdf3d7; }
+  .card { display: flex; align-items: center; gap: 22px; }
+  .card-main { min-width: 190px; display: flex; flex-direction: column; justify-content: center; }
+  .card-expression { font-size: 42px; font-weight: 800; letter-spacing: 0.05em; line-height: 1.7; }
+  .card-reading { font-size: 18px; color: var(--muted); margin-top: 2px; }
+  .card-tags { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .tag { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 12px; }
+  .tag.jlpt { color: #7c3aed; background: #f3edff; }
+  .tag.freq { color: #0f7a5c; background: #e2f7ef; }
+  .tag.pitch { color: #a16207; background: #fdf3d7; }
+  .card-right { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .card-gloss { font-size: 15px; border-left: 4px solid var(--accent-2); padding-left: 12px; }
+  .terminal { background: #111827; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(15,23,42,0.25); }
+  .terminal-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; background: #1f2937; }
+  .terminal-bar i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .terminal-bar i:nth-child(1) { background: #f87171; }
+  .terminal-bar i:nth-child(2) { background: #fbbf24; }
+  .terminal-bar i:nth-child(3) { background: #34d399; }
+  .terminal-body {
+    padding: 18px 22px; font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px; line-height: 1.9; color: #e5e7eb;
+  }
+  .terminal-body .prompt { color: #34d399; }
+  .terminal-body .out { color: #fbbf24; white-space: pre-wrap; word-break: break-all; }
+  .flow { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+  .step {
+    flex: 1; min-width: 128px; background: #f6f8fd; border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 12px; text-align: center;
+  }
+  .step .num {
+    width: 26px; height: 26px; margin: 0 auto 8px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step .num.alt { background: var(--accent-2); }
+  .step .name { font-size: 14px; font-weight: 700; }
+  .step .desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .flow-arrow { align-self: center; color: #c3c9d6; font-size: 20px; }
+</style>
+</head>
+<body>
+
+  <section class="section" id="demo-reading">
+    <div class="section-title"><span class="dot"></span><span data-i18n="reading-title">读音（Reading）</span></div>
+    <div class="section-sub" data-i18n="reading-sub">保原文的分词 + 上下文读音：降り止む → ふりやむ</div>
+    <div class="tokens">
+      <div class="token"><div class="orig">雨</div><div class="hira">あめ</div><div class="rom">ame</div></div>
+      <div class="token"><div class="orig">が</div><div class="hira">が</div><div class="rom">ga</div></div>
+      <div class="token"><div class="orig">降り止む</div><div class="hira">ふりやむ</div><div class="rom">furiyamu</div></div>
+      <div class="token"><div class="orig">まで</div><div class="hira">まで</div><div class="rom">made</div></div>
+      <div class="token"><div class="orig">は</div><div class="hira">は</div><div class="rom">ha</div></div>
+      <div class="token"><div class="orig">帰れ</div><div class="hira">かえれ</div><div class="rom">kaere</div></div>
+      <div class="token"><div class="orig">ない</div><div class="hira">ない</div><div class="rom">nai</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-translation">
+    <div class="section-title"><span class="dot blue"></span><span data-i18n="translation-title">翻译与校验（Translation）</span></div>
+    <div class="section-sub" data-i18n="translation-sub">逐句契约：行数对应、假名漏译与占位符校验</div>
+    <div class="pair">
+      <div class="src">明日は晴れる。</div>
+      <div class="arrow">→</div>
+      <div class="dst">明天会放晴。</div>
+      <span class="badge ok" data-i18n="badge-ok">校验通过</span>
+    </div>
+    <div class="pair">
+      <div class="src">一緒に歩こう。</div>
+      <div class="arrow">→</div>
+      <div class="dst">一緒に歩こう。</div>
+      <span class="badge warn" data-i18n="badge-warn">假名漏译警告</span>
+    </div>
+  </section>
+
+  <section class="section" id="demo-dictionary">
+    <div class="section-title"><span class="dot green"></span><span data-i18n="dictionary-title">词典元数据（Dictionary）</span></div>
+    <div class="section-sub" data-i18n="dictionary-sub">Yomitan 词条：读音、释义、频率、声调、JLPT</div>
+    <div class="card">
+      <div class="card-main">
+        <div class="card-expression"><ruby>日本語<rt>にほんご</rt></ruby></div>
+        <div class="card-reading">nihongo</div>
+        <div class="card-tags">
+          <span class="tag jlpt">JLPT N5</span>
+          <span class="tag freq">freq 42</span>
+          <span class="tag pitch">中高</span>
+        </div>
+      </div>
+      <div class="card-right">
+        <div class="card-gloss">Japanese language</div>
+        <div class="card-gloss" data-i18n="dictionary-gloss">日语（学习对象）</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-cli">
+    <div class="section-title"><span class="dot blue"></span><span data-i18n="cli-title">CLI（Agent 优先）</span></div>
+    <div class="section-sub" data-i18n="cli-sub">确定性操作走 CLI：校验、翻译、语言列表</div>
+    <div class="terminal">
+      <div class="terminal-bar"><i></i><i></i><i></i></div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">python -m japanese_language_core validate --source ja.txt --translation zh.txt --paired</span></div>
+        <div class="out">校验通过：2 行翻译，0 个警告</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="demo-flow">
+    <div class="section-title"><span class="dot green"></span><span data-i18n="flow-title">工作流</span></div>
+    <div class="section-sub" data-i18n="flow-sub">文本 → 读音/词典 → 翻译/校验 → 导出/评测</div>
+    <div class="flow">
+      <div class="step"><div class="num">1</div><div class="name" data-i18n="flow-1">文本</div><div class="desc" data-i18n="flow-1d">日文输入</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="step"><div class="num alt">2</div><div class="name" data-i18n="flow-2">读音 / 词典</div><div class="desc" data-i18n="flow-2d">reading · dictionary</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="step"><div class="num">3</div><div class="name" data-i18n="flow-3">翻译 / 校验</div><div class="desc" data-i18n="flow-3d">translation</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="step"><div class="num alt">4</div><div class="name" data-i18n="flow-4">导出 / 评测</div><div class="desc" data-i18n="flow-4d">export · benchmarks</div></div>
+    </div>
+  </section>
+
+<script>
+  const I18N = {
+    zh: {
+      "reading-title": "读音（Reading）",
+      "reading-sub": "保原文的分词 + 上下文读音：降り止む → ふりやむ",
+      "translation-title": "翻译与校验（Translation）",
+      "translation-sub": "逐句契约：行数对应、假名漏译与占位符校验",
+      "badge-ok": "校验通过",
+      "badge-warn": "假名漏译警告",
+      "dictionary-title": "词典元数据（Dictionary）",
+      "dictionary-sub": "Yomitan 词条：读音、释义、频率、声调、JLPT",
+      "dictionary-gloss": "日语（学习对象）",
+      "cli-title": "CLI（Agent 优先）",
+      "cli-sub": "确定性操作走 CLI：校验、翻译、语言列表",
+      "flow-title": "工作流",
+      "flow-sub": "文本 → 读音/词典 → 翻译/校验 → 导出/评测",
+      "flow-1": "文本", "flow-1d": "日文输入",
+      "flow-2": "读音 / 词典", "flow-2d": "reading · dictionary",
+      "flow-3": "翻译 / 校验", "flow-3d": "translation",
+      "flow-4": "导出 / 评测", "flow-4d": "export · benchmarks"
+    },
+    ja: {
+      "reading-title": "読み（Reading）",
+      "reading-sub": "原文保持の分かち書き＋文脈読み：降り止む → ふりやむ",
+      "translation-title": "翻訳と検証（Translation）",
+      "translation-sub": "行単位契約：行数対応・仮名漏れ・プレースホルダー検証",
+      "badge-ok": "検証OK",
+      "badge-warn": "仮名漏れ警告",
+      "dictionary-title": "辞書メタデータ（Dictionary）",
+      "dictionary-sub": "Yomitan エントリ：読み・意味・頻度・アクセント・JLPT",
+      "dictionary-gloss": "日本語（学習対象）",
+      "cli-title": "CLI（Agent 優先）",
+      "cli-sub": "決定的な操作は CLI：検証・翻訳・言語一覧",
+      "flow-title": "ワークフロー",
+      "flow-sub": "テキスト → 読み/辞書 → 翻訳/検証 → 出力/評価",
+      "flow-1": "テキスト", "flow-1d": "日本語入力",
+      "flow-2": "読み / 辞書", "flow-2d": "reading · dictionary",
+      "flow-3": "翻訳 / 検証", "flow-3d": "translation",
+      "flow-4": "出力 / 評価", "flow-4d": "export · benchmarks"
+    },
+    en: {
+      "reading-title": "Reading",
+      "reading-sub": "Source-preserving tokenization + contextual readings: 降り止む → ふりやむ",
+      "translation-title": "Translation & validation",
+      "translation-sub": "Line-preserving contract: pairing, kana-leak and placeholder checks",
+      "badge-ok": "Validated",
+      "badge-warn": "Kana-leak warning",
+      "dictionary-title": "Dictionary metadata",
+      "dictionary-sub": "Yomitan entry: reading, gloss, frequency, pitch, JLPT",
+      "dictionary-gloss": "Japanese language",
+      "cli-title": "CLI (Agent-first)",
+      "cli-sub": "Deterministic operations via CLI: validate, translate, languages",
+      "flow-title": "Workflow",
+      "flow-sub": "Text → reading/dictionary → translation/validation → export/evaluation",
+      "flow-1": "Text", "flow-1d": "Japanese input",
+      "flow-2": "Reading / Dict", "flow-2d": "reading · dictionary",
+      "flow-3": "Translate / Check", "flow-3d": "translation",
+      "flow-4": "Export / Eval", "flow-4d": "export · benchmarks"
+    }
+  };
+  const lang = new URLSearchParams(location.search).get("lang") || "zh";
+  const dict = I18N[lang] || I18N.zh;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = dict[el.dataset.i18n] || el.textContent;
+  });
+  document.documentElement.lang = lang === "ja" ? "ja" : lang === "en" ? "en" : "zh-CN";
+</script>
+</body>
+</html>
