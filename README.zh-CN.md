@@ -118,6 +118,46 @@ python3 -m pip install -e .
 本包暴露的是适配器和规范化后的值，而不是底层 NLP 库的内部对象图。这样可以让集成更容易
 测试，并让引擎升级通过版本化的行为变化显现出来。
 
+## 方法论与开源基础
+
+本项目建立在日语语言处理社区长期积累的工作之上。我们特别尊重并感谢那些让上下文词法分析、
+日语词典和假名转换能够作为开源基础能力被复用的研究者与维护者。
+
+这里把“方法论来源”和“运行时组件”明确列出：
+
+- **[Sudachi / Sudachi.rs](https://github.com/WorksApplications/sudachi.rs)**：提供上下文日语形态素分析、
+  多粒度切分、规范化和读音形式。本项目遵循“先根据上下文词法单元判断读音，再处理显示”的原则，
+  而不是孤立地给每个汉字查音。Sudachi 官方资料还引用了 Takaoka 等人的论文 *Sudachi: a Japanese
+  Tokenizer for Business*（LREC 2018）。
+- **[SudachiDict](https://github.com/WorksApplications/SudachiDict)**：Sudachi 路径使用的系统词典。
+  分词器的效果依赖词典资源，因此词典版本也是可复现读音行为的一部分。
+- **[fugashi](https://github.com/polm/fugashi) 与
+  [MeCab](https://github.com/taku910/mecab)**：兼容路径所依赖的日语分词和词典集成传统。fugashi
+  提供了适合 Python 应用使用的形态素处理接口。
+- **[UniDic-lite](https://github.com/polm/unidic-lite)**：可通过 pip 安装的较小 UniDic 资源发行包，
+  用于 Fugashi 回退和兼容场景。
+- **[PyKakasi](https://github.com/miurahr/pykakasi)**：提供假名/汉字转换和 Hepburn 罗马音能力。本项目
+  用它作为回退引擎，也用它把 Sudachi 产生的读音转换为罗马音。
+
+### 许可证与署名说明
+
+以上项目属于依赖或外部语言资源，本仓库没有重新实现它们，也不主张拥有它们的成果。各组件继续
+适用其原项目的许可证和声明：
+
+| 组件 | 上游许可证 / 声明 |
+| --- | --- |
+| Sudachi / Sudachi.rs | Apache-2.0 |
+| SudachiDict | Apache-2.0 |
+| fugashi | MIT；其发行包同时涉及 MeCab 和词典声明 |
+| MeCab | BSD 风格许可证，详见上游和 fugashi 说明 |
+| UniDic-lite | 包代码采用 MIT 或 WTFPL；UniDic 数据适用其自身声明，包括 BSD 条款 |
+| PyKakasi | GPL-3.0-or-later，并包含项目说明中的 KAKASI 和 UniDic 署名信息 |
+
+这些依赖由环境单独安装，本仓库不将它们复制进源码。重新分发包含这些依赖的环境或二进制文件时，
+应保留相应的上游许可证文本和声明。具体法律条款以上游项目为准。
+
+本仓库的 MIT License 只适用于本仓库中的原创代码，不会重新授权或替代任何依赖项目的许可证。
+
 ## 范围与非目标
 
 本仓库不是：

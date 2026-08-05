@@ -159,6 +159,60 @@ The package exposes adapters and normalized values, not the internal object
 graphs of its underlying NLP libraries. This keeps integrations testable and
 makes engine upgrades visible through versioned behavior changes.
 
+## Methodology & open-source foundations
+
+This project is built on the work of the Japanese-language processing
+community. We are grateful to the researchers and maintainers who made
+contextual tokenization, Japanese dictionaries, and kana conversion available
+as reusable open-source building blocks.
+
+The influences and runtime components are intentionally described separately:
+
+- **[Sudachi / Sudachi.rs](https://github.com/WorksApplications/sudachi.rs)** —
+  contextual Japanese morphological analysis, multi-granular segmentation,
+  normalization, and reading forms. Our engine follows the principle that a
+  reading should be obtained from a contextual lexical unit rather than from
+  isolated characters. Sudachi also points to the paper *Sudachi: a Japanese
+  Tokenizer for Business* by Takaoka et al. (LREC 2018).
+- **[SudachiDict](https://github.com/WorksApplications/SudachiDict)** — the
+  system lexicon used by the Sudachi path. A tokenizer is only as useful as
+  the lexical resources that support it, so dictionary releases are part of
+  reproducible reading behavior.
+- **[fugashi](https://github.com/polm/fugashi) and
+  [MeCab](https://github.com/taku910/mecab)** — the Japanese tokenization and
+  dictionary integration tradition behind the compatibility path. fugashi's
+  Python interface makes morphological processing practical in application
+  code.
+- **[UniDic-lite](https://github.com/polm/unidic-lite)** — a pip-installable
+  distribution of a smaller UniDic resource, used with the Fugashi adapter for
+  fallback and compatibility scenarios.
+- **[PyKakasi](https://github.com/miurahr/pykakasi)** — kana/kanji
+  transliteration and Hepburn romanization support. We use it both for the
+  fallback engine and for romanization of readings produced by Sudachi.
+
+### License and attribution notes
+
+The projects above are dependencies or external language resources; they are
+not reimplemented or claimed by this repository. Their licenses and notices
+remain applicable to their respective components:
+
+| Component | Upstream license / notice |
+| --- | --- |
+| Sudachi / Sudachi.rs | Apache-2.0 |
+| SudachiDict | Apache-2.0 |
+| fugashi | MIT; its distribution also relates to MeCab and dictionary notices |
+| MeCab | BSD-style license, as documented by its upstream and fugashi |
+| UniDic-lite | MIT or WTFPL for the package code; UniDic data is distributed under its own notice, including BSD terms |
+| PyKakasi | GPL-3.0-or-later, with additional KAKASI and UniDic attribution described by the project |
+
+These dependencies are installed separately and are not vendored into this
+repository. Anyone redistributing an environment or binary that includes them
+should preserve the relevant upstream license texts and notices. See the
+linked upstream repositories for the authoritative license terms.
+
+The MIT license in this repository applies only to the original code in this
+repository; it does not relicense or replace the licenses of its dependencies.
+
 ## Scope and non-goals
 
 This repository is intentionally not:
