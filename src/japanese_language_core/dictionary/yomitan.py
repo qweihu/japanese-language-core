@@ -17,6 +17,7 @@ import re
 import zipfile
 
 from .model import FrequencyTag, KanjiEntry, PitchAccent, TagEntry, TermEntry
+from .jmnedict import looks_like_name, to_name_entry
 
 
 @dataclass(frozen=True)
@@ -272,6 +273,15 @@ class YomitanDictionary:
 
     def lookup_kanji(self, character: str) -> list[KanjiEntry]:
         return list(self._kanji_index.get(character, []))
+
+    def lookup_names(self, expression: str):
+        """Return proper-noun entries (JMnedict view) for ``expression``."""
+
+        return [
+            to_name_entry(entry)
+            for entry in self._term_index.get(expression, [])
+            if looks_like_name(entry)
+        ]
 
     def tags(self) -> dict[str, TagEntry]:
         return dict(self._tag_defs)

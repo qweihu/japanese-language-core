@@ -596,6 +596,24 @@ print(markdown, end="")
 One source line, one translation line immediately below, one blank line
 between groups.
 
+### Mining pipeline
+
+`export.mining` is the flashcard-mining contract: sentence → note →
+AnkiConnect payload.
+
+```python
+from japanese_language_core.export import MiningUnit, mining_payload
+
+unit = MiningUnit(
+    sentence="日本語を勉強する。",
+    translation="学习日语。",
+    expression="日本語",
+    reading="にほんご",
+    tags=["jlptN5"],
+)
+payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
+```
+
 ## CLI reference
 
 ```text

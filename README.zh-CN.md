@@ -566,6 +566,23 @@ print(markdown, end="")
 
 每单元"源行 + 紧跟的翻译行 + 组间空行"。
 
+### 闪卡挖掘（mining）
+
+`export.mining` 是挖句流水线契约：句 → 笔记 → AnkiConnect payload。
+
+```python
+from japanese_language_core.export import MiningUnit, mining_payload
+
+unit = MiningUnit(
+    sentence="日本語を勉強する。",
+    translation="学习日语。",
+    expression="日本語",
+    reading="にほんご",
+    tags=["jlptN5"],
+)
+payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
+```
+
 ## CLI 参考
 
 ```text

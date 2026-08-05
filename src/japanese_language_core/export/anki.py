@@ -115,6 +115,7 @@ def anki_connect_payload(
         "Pitch": "pitch",
         "Frequency": "frequency",
     }
+    note = notes[0]
     return {
         "action": "addNote",
         "version": 6,

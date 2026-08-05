@@ -17,13 +17,13 @@
 | 假名/罗马音转换 | `reading.kana` | ✅ 生产 | pykakasi；kusanaji（Node） | 保持 |
 | 词形分析（活用形） | `reading.deinflect` + `reading.conjugator` | ✅ 生产 | Yomitan MultiLanguageTransformer；jamdict | 双向（还原 + 生成）已实现 |
 | 词典查询（词条/汉字） | `dictionary` | 🟡 实验 | jamdict；Yomitan 词典生态；jisho | 搜索已实现（prefix/substring/wildcard） |
-| 专名读音 | `dictionary`（Yomitan/JMnedict bank） | 🟡 部分 | JMnedict；Yomitan | P1（用户确认必做）：专名模块与上下文消歧 |
+| 专名读音 | `dictionary.jmnedict` | ✅ 新增 | JMnedict；Yomitan | `lookup_names` 已实现；上下文消歧留待数据驱动 |
 | 语法分析 | `grammar` | 🟡 实验 | GiNZA/spaCy（PoS + 依存）；BunPro | `ReadingToken` 已暴露 PoS/辞書形/标准形；依存句法交给 GiNZA，不进 core |
 | 翻译 | `translation` | ✅ 生产 | LLM 管线 + COMET/BLEU 评测 | 押后 LLM-as-judge（外部评测工具） |
 | 难度评估 | `dictionary.jlpt` + `dictionary.scoring` | 🟡 实验 | JPDB/BCCWJ 频度；tanos JLPT（CC BY） | 可读性打分已实现（readability/difficulty_label） |
 | 声调（pitch accent） | `dictionary`（meta bank）+ `dictionary.pitch` | 🟡 实验 | Kanjium/Wadoku；Yomitan meta；PitchAccent add-on | pattern/classify 已实现（位置 → 升降模式） |
 | 例句/句库 | `sentences` | ✅ 新增 | Tatoeba API/导出；tatoebatools | Tatoeba 句库读取器已实现（复用基准集数据流） |
-| 闪卡挖掘（SRS） | `export.anki` | 🟡 实验 | jp-mining-note；Yomichan + AnkiConnect | P1（用户确认必做）：mining 流水线契约（句→卡→Anki） |
+| 闪卡挖掘（SRS） | `export.mining` | ✅ 新增 | jp-mining-note；Yomichan + AnkiConnect | mining 契约已实现（MiningUnit/payload/TSV） |
 | 文本统计与归一化 | `reading.kana` + `structure` + `reading.splitter`/`reading.mora` | ✅ 部分 | NFKC；MeCab 统计 | 句子分割与拍计数已实现 |
 | 语音/音频 | — | ❌ | Onsei；OpenJTalk；Voicevox；Forvo | 再往后（P3）：音频提供方契约（不合成） |
 | 汉字信息（部首/笔顺） | `dictionary.kanjivg` | 🟡 新增 | KanjiVG；WaniKani；kanjiapi | KanjiVG 读取器已实现（数据自备，CC BY-SA） |
@@ -64,8 +64,11 @@
 - [x] 词典内 furigana 分布接入：词条 `furigana` 扩展字段 + `align_with_furigana`
   （先评估数据可用性——标准 Yomitan v3 大多不带，作为扩展支持）；
 - [x] KanjiVG 笔顺/部首读取器（数据自备）；
-- [ ] JMnedict 专名读音模块（用户确认必做，进行中）；
-- [ ] Anki mining 流水线契约：句 → 卡 → AnkiConnect payload（用户确认必做）。
+- [x] JMnedict 专名读音模块：`lookup_names` / `NameEntry` / 类别识别
+  （姓氏/地名/组织等；JMnedict 空读音 + 释义即读音的模式已兼容）；
+- [x] Anki mining 流水线契约：`MiningUnit` → `to_note` →
+  `mining_payload`（AnkiConnect addNote）/ `mining_tsv`；
+  句内词条检测 `detect_expression`。
 
 ### P2（有消费方再做）
 
