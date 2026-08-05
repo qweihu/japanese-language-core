@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import os
+import time
 from typing import Callable, Protocol
 import urllib.error
 import urllib.request
@@ -94,6 +95,9 @@ class OpenAICompatibleTranslator:
     timeout: float = 60.0
     temperature: float = 0.2
     max_tokens: int = 2048
+    max_retries: int = 2
+    retry_backoff: float = 1.0
+    max_chars_per_request: int = 4000
     transport: Transport = _default_transport
     name: str = field(default="openai-compatible", init=False)
 
@@ -111,16 +115,71 @@ class OpenAICompatibleTranslator:
         registry = LanguageRegistry.from_package()
         language = registry.get(target_lang)
         url = self.base_url.rstrip("/") + "/chat/completions"
+        result_units: list[TranslationUnit] = []
+        warnings: list[str] = []
+        errors: list[str] = []
+        for chunk in self._chunk_units(units):
+            partial, chunk_warnings, chunk_errors = self._translate_chunk(
+                chunk, language, url
+            )
+            result_units.extend(partial)
+            warnings.extend(chunk_warnings)
+            errors.extend(chunk_errors)
+        return TranslationResult(
+            source_lang=source_lang,
+            target_lang=target_lang,
+            units=result_units,
+            provider=self.name,
+            warnings=warnings,
+            errors=errors,
+        )
+
+    def _chunk_units(
+        self, units: list[TranslationUnit]
+    ) -> list[list[TranslationUnit]]:
+        if not units:
+            return []
+        chunks: list[list[TranslationUnit]] = []
+        current: list[TranslationUnit] = []
+        size = 0
+        for unit in units:
+            cost = len(unit.source) + 1
+            if current and size + cost > self.max_chars_per_request:
+                chunks.append(current)
+                current = []
+                size = 0
+            current.append(unit)
+            size += cost
+        if current:
+            chunks.append(current)
+        return chunks
+
+    def _translate_chunk(
+        self,
+        units: list[TranslationUnit],
+        language,
+        url: str,
+    ) -> tuple[list[TranslationUnit], list[str], list[str]]:
         payload: dict[str, object] = {
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "messages": [
                 {"role": "system", "content": build_system_prompt(language)},
-                {"role": "user", "content": build_user_prompt(units)},
+                {"role": "user", "content": build_user_prompt(units, language)},
             ],
         }
-        raw = self.transport(url, self._headers(), payload)
+        last_error: TranslateError | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                raw = self.transport(url, self._headers(), payload)
+                break
+            except TranslateError as exc:
+                last_error = exc
+                if attempt < self.max_retries:
+                    time.sleep(self.retry_backoff * (attempt + 1))
+        else:
+            raise last_error  # type: ignore[misc]
         try:
             data = json.loads(raw)
             content = data["choices"][0]["message"]["content"]
@@ -140,11 +199,4 @@ class OpenAICompatibleTranslator:
             paired=True,
             kana_warning=language.kana_warning,
         )
-        return TranslationResult(
-            source_lang=source_lang,
-            target_lang=target_lang,
-            units=result_units,
-            provider=self.name,
-            warnings=warnings,
-            errors=errors,
-        )
+        return result_units, warnings, errors

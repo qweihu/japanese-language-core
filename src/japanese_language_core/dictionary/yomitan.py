@@ -123,13 +123,19 @@ class YomitanDictionary:
                 if isinstance(data, (int, float)):
                     frequency = FrequencyTag(value=data, source=self.index.title)
                 elif isinstance(data, dict):
+                    value = data.get("value", data.get("frequency"))
                     frequency = FrequencyTag(
-                        value=data.get("value"),
+                        value=value if isinstance(value, (int, float)) else None,
                         source=self.index.title,
                     )
             elif mode == "pitch":
                 items = data if isinstance(data, list) else [data]
                 for item in items:
+                    if item is None or item == "n/a":
+                        continue
+                    if isinstance(item, (int, float)):
+                        accents.append(PitchAccent(position=int(item)))
+                        continue
                     if isinstance(item, dict):
                         position = item.get("position")
                         accents.append(
@@ -234,6 +240,17 @@ class YomitanDictionary:
         """Return structural validation errors for the bundle."""
 
         errors: list[str] = []
-        if not self._term_index and not self._entries.get("term"):
-            errors.append("缺少 term_bank_*.json")
+        if not self._index.title:
+            errors.append("index.json 缺少 title")
+        if not self._entries.get("term") and not self._entries.get("kanji"):
+            errors.append("缺少 term_bank_*.json 或 kanji_bank_*.json")
+        for idx, row in enumerate(self._entries.get("term", []), start=1):
+            if len(row) < 2 or not isinstance(row[0], str):
+                errors.append(f"term_bank 第 {idx} 行字段不足（需要 expression/reading）")
+        for idx, row in enumerate(self._entries.get("kanji", []), start=1):
+            if len(row) < 6:
+                errors.append(f"kanji_bank 第 {idx} 行字段不足（需要 6 列）")
+        for idx, row in enumerate(self._entries.get("tag", []), start=1):
+            if not row or not isinstance(row[0], str):
+                errors.append(f"tag_bank 第 {idx} 行无效")
         return errors

@@ -261,7 +261,8 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
   歧义读音/送假名/长音的句级人工基准仍待引入；
 - [x] 建立翻译校验正/负例集：`benchmarks/tatoeba_sample.json`（20 句真实
   日→中句对）+ `tests/test_benchmark_sample.py`；
-- [ ] 增加歧义 furigana 对齐样例测试并写明已知限制。
+- [x] 增加歧义 furigana 对齐样例测试并写明已知限制（贪心把 kana 分配给
+  第一个汉字，如 好き嫌い → 好=す、き=き；合法但未必与词典一致）。
 
 ### P1（应该）
 
@@ -273,11 +274,12 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [x] 活用形补充高频规则（ちゃう/じゃう/とく/てる/てた/たがる/てください/
   たほうがいい/そうです/ことがある 等）；
 - [x] Yomitan meta bank 建索引（去掉线性扫描）；
-- [ ] auto 降级可观测：调用方记录 `engine.name`，技能/CLI 提示；
-- [ ] 对齐算法"词典优先 + 算法回退"组合；
-- [ ] 翻译 few-shot 示例进 languages.json；
-- [ ] BYO-LLM 重试 + 长文本分批 + max_tokens 可覆盖；
-- [ ] 词典 validate 对齐 Yomitan schema 基本校验；
+- [x] auto 降级可观测：`engine.name` + CLI `reading --verbose`；
+- [ ] 对齐算法改进：评估 japanese-furigana-normalize 风格算法 / 词典内
+  分布接入（Yomitan v3 大多数字典不携带词级分布，需先评估数据可用性）；
+- [x] 翻译 few-shot 示例进 languages.json 并注入 prompt；
+- [x] BYO-LLM 重试 + 长文本分批 + max_tokens 可覆盖；
+- [x] 词典 validate 对齐 Yomitan schema 基本校验（title/文件/行字段）；
 - [x] CI：GitHub Actions matrix 测试 + benchmark 任务（pytest-cov 覆盖率
   门禁列为 P2）。
 
@@ -288,7 +290,7 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [ ] 语法检测提供 token+PoS 输入接口；
 - [ ] 发布到 PyPI（semver + CHANGELOG + 许可证声明）；
 - [ ] 频率/声调格式变体兼容与文档说明；
-- [ ] 占位符位置/数量校验。
+- [x] 占位符数量校验（同 token 出现次数不一致时告警）。
 - [ ] pytest + 覆盖率（pytest-cov）迁移与门禁。
 
 ## 6. 参考来源

@@ -185,6 +185,11 @@ Strict modes raise `EngineUnavailableError` instead of silently switching
 engines. `ReadingEngine` is the only public boundary; you never touch Sudachi
 `Morpheme`, Fugashi tag objects, or dictionary internals.
 
+In `auto` mode the active engine is available as `engine.name` (including
+after a fallback); log it if you need to know. For strict consistency use
+`--engine sudachi` / `--engine pykakasi`. The CLI prints the engine name with
+`reading --verbose`.
+
 ## Kana and romaji
 
 Pure standard-library utilities:
@@ -230,7 +235,11 @@ print(align_reading("日本語", "にほんご"))
 Kana in the term is matched verbatim; each kanji run consumes kana greedily
 until the next kana of the term. Ambiguous compounds (好き嫌い) may need
 dictionary-level alignment, which the `dictionary` capability can supply;
-this function is the deterministic fallback.
+this function is the deterministic fallback. Its greedy choice is a valid but
+not necessarily dictionary-identical distribution (e.g. 好き嫌い → 好=す,
+き=き, 嫌=きら); use dictionary-embedded furigana data when you need
+community identical alignment. Known limitation documented in
+docs/methodology-audit.md.
 
 ## Deinflection
 
@@ -409,9 +418,13 @@ python3 -m japanese_language_core.translation translate \
 What happens under the hood:
 
 1. the system prompt is built from the registered language's conventions;
-2. the model output is parsed back into one translation per source line;
-3. a missing line raises `TranslateError` — no silent truncation;
-4. the result is validated with the same `validate_translation` contract.
+2. few-shot examples from the language registry stabilize style and output
+   shape;
+3. long inputs are split into chunks (`max_chars_per_request`, default 4000)
+   and failed requests are retried (`max_retries`, `retry_backoff`);
+4. the model output is parsed back into one translation per source line; a
+   missing line raises `TranslateError` — no silent truncation;
+5. the result is validated with the same `validate_translation` contract.
 
 For tests, inject a `transport` callable (default is a stdlib `urllib`
 implementation):

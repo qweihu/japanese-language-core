@@ -46,6 +46,7 @@ class LanguageInfo:
     default: bool = False
     kana_warning: bool = True
     conventions: dict[str, str] = field(default_factory=dict)
+    examples: tuple[tuple[str, str], ...] = ()
 
 
 class LanguageRegistry:
@@ -65,11 +66,16 @@ class LanguageRegistry:
                 name=str(raw.get("name", code)),
                 default=bool(raw.get("default", False)),
                 kana_warning=bool(raw.get("kana_warning", True)),
-                conventions={
-                    str(key): str(value)
-                    for key, value in raw.get("conventions", {}).items()
-                },
-            )
+            conventions={
+                str(key): str(value)
+                for key, value in raw.get("conventions", {}).items()
+            },
+            examples=tuple(
+                (str(item[0]), str(item[1]))
+                for item in raw.get("examples", [])
+                if isinstance(item, (list, tuple)) and len(item) >= 2
+            ),
+        )
             self._languages[code] = info
 
     @classmethod

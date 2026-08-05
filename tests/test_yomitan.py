@@ -59,6 +59,46 @@ class YomitanDictionaryTests(unittest.TestCase):
         self.assertEqual("日", kanji[0].character)
         self.assertIn("jlptN5", dictionary.tags())
 
+    def test_validate_reports_structural_errors(self):
+        path = "/private/tmp/fixture-empty-yomitan.zip"
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr("index.json", json.dumps({"format_version": 3}))
+        dictionary = YomitanDictionary(path)
+        errors = dictionary.validate()
+        self.assertTrue(any("title" in error for error in errors))
+        self.assertTrue(any("term_bank" in error for error in errors))
+
+    def test_meta_variants(self):
+        path = "/private/tmp/fixture-meta-yomitan.zip"
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr(
+                "index.json",
+                json.dumps({"title": "Meta Test", "format_version": 3}),
+            )
+            archive.writestr(
+                "term_bank_1.json",
+                json.dumps([["食べる", "たべる", [], [], 0, ["to eat"], 1, []]]),
+            )
+            archive.writestr(
+                "term_meta_bank_1.json",
+                json.dumps(
+                    [
+                        ["食べる", "freq", {"frequency": 7}],
+                        [
+                            "食べる",
+                            "pitch",
+                            [{"position": 2, "category": "heiban"}, "n/a", 3],
+                        ],
+                    ]
+                ),
+            )
+        dictionary = YomitanDictionary(path)
+        term = dictionary.lookup_terms("食べる")[0]
+        self.assertEqual(7, term.frequency.value)
+        self.assertEqual(
+            [2, 3], [accent.position for accent in term.pitch_accents]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

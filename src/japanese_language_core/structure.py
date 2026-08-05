@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import re
 
 
@@ -47,23 +48,16 @@ def content_lines(lines: list[str]) -> list[str]:
 
 
 def extract_placeholders(line: str) -> list[str]:
-    """Return unique placeholder tokens found in a line."""
+    """Return placeholder tokens found in a line (duplicates preserved)."""
 
-    seen: set[str] = set()
-    result: list[str] = []
-    for match in PLACEHOLDER_RE.finditer(line):
-        token = match.group(0)
-        if token not in seen:
-            seen.add(token)
-            result.append(token)
-    return result
+    return [match.group(0) for match in PLACEHOLDER_RE.finditer(line)]
 
 
 def check_placeholders(
     source_lines: list[str], translation_lines: list[str]
 ) -> list[str]:
-    """Warn when a placeholder in a source line is missing from the matching
-    translation line."""
+    """Warn when a placeholder is missing or its count differs in the
+    matching translation line."""
 
     warnings: list[str] = []
     src_content = content_lines(source_lines)
@@ -71,10 +65,14 @@ def check_placeholders(
     for index, (source, translation) in enumerate(
         zip(src_content, tgt_content), start=1
     ):
-        for token in extract_placeholders(source):
-            if token not in translation:
+        source_counts = Counter(extract_placeholders(source))
+        target_counts = Counter(extract_placeholders(translation))
+        for token, count in source_counts.items():
+            present = target_counts.get(token, 0)
+            if present < count:
+                missing = count - present
                 warnings.append(
-                    f"翻译行 {index}: 占位符 {token!r} 未保留在翻译中"
+                    f"翻译行 {index}: 占位符 {token!r} 缺少 {missing} 处"
                 )
     return warnings
 

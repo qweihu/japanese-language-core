@@ -11,7 +11,12 @@
         "proper_nouns": "使用通行译法（東京→东京）；无通行译法时保留日文原文",
         "kana": "翻译行出现平假名/片假名视为漏译（专名或引用可保留）",
         "notes": "逐句对应，不合并、不拆分组，不加译注或赏析"
-      }
+      },
+      "examples": [
+        ["明日は晴れる。", "明天会放晴。"],
+        ["一緒に歩こう。", "一起走吧。"],
+        ["これをください。", "请给我这个。"]
+      ]
     },
     "en": {
       "name": "English",
@@ -24,7 +29,11 @@
         "proper_nouns": "Hepburn romanization; use established English names when they exist",
         "kana": "kana in a translation line usually means an untranslated fragment",
         "notes": "one line per source line; preserve blank-line grouping; no footnotes"
-      }
+      },
+      "examples": [
+        ["これはペンです。", "This is a pen."],
+        ["元気ですか？", "How are you?"]
+      ]
     }
   }
 }

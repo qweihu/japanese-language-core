@@ -176,6 +176,10 @@ token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
 `ReadingEngine` 是唯一公共边界；你不接触 Sudachi `Morpheme`、Fugashi tag
 对象或词典内部结构。
 
+`auto` 模式下实际使用的引擎可通过 `engine.name` 读取（含降级后）；需要严格
+一致时用 `--engine sudachi` / `--engine pykakasi`。CLI 可用
+`reading --verbose` 打印引擎名。
+
 ## 假名与罗马音
 
 纯标准库工具：
@@ -219,7 +223,9 @@ print(align_reading("日本語", "にほんご"))
 
 词中假名逐字匹配；每段汉字贪婪消费假名，直到遇到下一个假名或读完。
 歧义复合词（好き嫌い）可能需要词典级对齐，`dictionary` 能力可提供线索；
-该函数是确定性回退。
+该函数是确定性回退。贪心选择是合法但未必与社区词典一致的分布
+（如 好き嫌い → 好=す、き=き、嫌=きら）；需要与词典一致时请使用带读音
+分布的词典数据。已知限制见 docs/methodology-audit.md。
 
 ## 活用形还原
 
@@ -391,9 +397,12 @@ python3 -m japanese_language_core.translation translate \
 执行过程：
 
 1. 用注册语言的约定自动构建 system prompt；
-2. 模型输出按源行数解析回逐行翻译；
-3. 行数不足抛 `TranslateError`——不会静默截断；
-4. 结果走同一套 `validate_translation` 校验。
+2. 语言注册表中的 few-shot 示例稳定风格与输出形态；
+3. 长输入自动分批（`max_chars_per_request`，默认 4000），失败自动重试
+   （`max_retries`、`retry_backoff`）；
+4. 模型输出按源行数解析回逐行翻译；行数不足抛 `TranslateError`——
+   不会静默截断；
+5. 结果走同一套 `validate_translation` 校验。
 
 测试时可注入 `transport` 可调用对象（默认是标准库 `urllib` 实现）：
 

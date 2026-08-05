@@ -24,10 +24,17 @@ def build_system_prompt(language: LanguageInfo) -> str:
     return "\n".join(lines)
 
 
-def build_user_prompt(units: list[TranslationUnit]) -> str:
+def build_user_prompt(
+    units: list[TranslationUnit], language: LanguageInfo | None = None
+) -> str:
     lines = [
         "请逐行翻译以下文本，每行输出一行译文，不要添加行号以外的内容："
     ]
+    if language is not None and language.examples:
+        lines.append("示例：")
+        for source, translation in language.examples:
+            lines.append(f"  {source} → {translation}")
+        lines.append("")
     for index, unit in enumerate(units, start=1):
         lines.append(f"{index}. {unit.source}")
     return "\n".join(lines)

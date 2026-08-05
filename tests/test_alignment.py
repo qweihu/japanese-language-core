@@ -18,6 +18,19 @@ class AlignmentTests(unittest.TestCase):
         self.assertEqual("好き嫌い", "".join(surface for surface, _ in pairs))
         self.assertEqual("すききらい", "".join(reading for _, reading in pairs))
 
+    def test_ambiguous_compound_documented_greedy(self):
+        # Known limitation: greedy gives one valid distribution; community
+        # dictionaries (e.g. Jitendex) may distribute kana differently.
+        pairs = align_reading("好き嫌い", "すききらい")
+        self.assertEqual(
+            [("好", "す"), ("き", "き"), ("嫌", "きら"), ("い", "い")], pairs
+        )
+
+    def test_all_kana_passthrough(self):
+        pairs = align_reading("おねがいいたします", "おねがいいたします")
+        self.assertEqual("おねがいいたします", "".join(s for s, _ in pairs))
+        self.assertEqual("おねがいいたします", "".join(r for _, r in pairs))
+
 
 if __name__ == "__main__":
     unittest.main()

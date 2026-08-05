@@ -94,6 +94,10 @@ print(result.units[0].translation)  # 明天会放晴。
 `create_engine("auto"|"sudachi"|"pykakasi")` がエンジンを返し、`tokens(text)`
 が `ReadingToken(orig, hira, hepburn)` を生成。`orig` は常に入力を再構成します。
 
+`auto` では実際に使われたエンジンを `engine.name` で確認できます
+（CLI は `reading --verbose`）。厳密に固定したい場合は
+`--engine sudachi` / `--engine pykakasi` を使用します。
+
 ```python
 from japanese_language_core.reading import ReadingToken
 
@@ -118,6 +122,10 @@ from japanese_language_core.reading import align_reading, deinflect
 
 print(align_reading("食べる", "たべる"))
 # [('食', 'た'), ('べ', 'べ'), ('る', 'る')]
+
+# 曖昧な複合語（好き嫌い）は貪欲な一つの分布を返す既知の制限あり
+print(align_reading("好き嫌い", "すききらい"))
+# [('好', 'す'), ('き', 'き'), ('嫌', 'きら'), ('い', 'い')]
 
 for candidate in deinflect("食べていました"):
     print(candidate.word, "|", candidate.reason)

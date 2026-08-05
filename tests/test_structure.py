@@ -28,6 +28,11 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(len(warnings), 1)
         self.assertIn("♪", warnings[0])
 
+    def test_placeholder_count_mismatch_warns(self):
+        warnings = check_placeholders(["♪ ♪ 明日"], ["♪ 明天"])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("缺少 1 处", warnings[0])
+
 
 if __name__ == "__main__":
     unittest.main()

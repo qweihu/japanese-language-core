@@ -23,6 +23,8 @@ from .translation.__main__ import _languages, _translate, _validate
 
 def _reading(args: argparse.Namespace) -> int:
     engine = create_engine(args.engine)
+    if args.verbose:
+        print(f"engine={engine.name}", file=sys.stderr)
     text = sys.stdin.read() if args.text in (None, "-") else args.text
     for token in engine.tokens(text):
         print(
@@ -44,6 +46,9 @@ def main(argv: list[str] | None = None) -> int:
     reading = subparsers.add_parser("reading", help="输出读音 token（JSON Lines）")
     reading.add_argument(
         "--engine", default="auto", choices=["auto", "sudachi", "pykakasi"]
+    )
+    reading.add_argument(
+        "--verbose", action="store_true", help="把实际使用的引擎名打印到 stderr"
     )
     reading.add_argument("text", nargs="?", default="-", help="文本或 -（stdin）")
     reading.set_defaults(func=_reading)

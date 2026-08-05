@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from contextlib import redirect_stderr
 from pathlib import Path
 
 from japanese_language_core.__main__ import main
@@ -45,6 +46,16 @@ class CliTests(unittest.TestCase):
             rc = main(["languages"])
         self.assertEqual(0, rc)
         self.assertIn("zh-CN", buffer.getvalue())
+
+    def test_reading_verbose_reports_engine(self):
+        error_buffer = io.StringIO()
+        with redirect_stdout(io.StringIO()):
+            with redirect_stderr(error_buffer):
+                rc = main(
+                    ["reading", "--engine", "pykakasi", "--verbose", "日本語"]
+                )
+        self.assertEqual(0, rc)
+        self.assertIn("engine=pykakasi", error_buffer.getvalue())
 
 
 if __name__ == "__main__":
