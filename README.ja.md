@@ -130,6 +130,8 @@ from japanese_language_core.reading import ReadingToken
 token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
 ```
 
+<p align="center"><img src="screenshot/ja/reading.png" alt="読みの例" width="820"></p>
+
 ## かな・ローマ字
 
 ```python
@@ -178,6 +180,8 @@ Yomitan 形式（`term_bank` / `kanji_bank` / `tag_bank` / meta bank）を読み
 頻度は整数または `value`/`frequency` キーを持つ dict、声調は
 `{position, category}` のリスト・整数位置・`"n/a"`（スキップ）という
 一般的なバリエーションに対応しています。
+
+<p align="center"><img src="screenshot/ja/dictionary.png" alt="辞書メタデータ" width="820"></p>
 
 ## 文法
 
@@ -236,6 +240,14 @@ python -m japanese_language_core.translation translate
 python -m japanese_language_core.translation languages
     [--registry FILE]       登録済み言語を一覧表示
 ```
+
+## 翻訳・CLI・ワークフロー
+
+<p align="center"><img src="screenshot/ja/translation.png" alt="翻訳と検証" width="820"></p>
+
+<p align="center"><img src="screenshot/ja/cli.png" alt="CLI" width="820"></p>
+
+<p align="center"><img src="screenshot/ja/flow.png" alt="ワークフロー" width="820"></p>
 
 ## 設計原則
 

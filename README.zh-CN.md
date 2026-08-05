@@ -189,6 +189,8 @@ Sudachi 引擎下每个 token 还携带形态学元数据（PyKakasi 路径下�
 一致时用 `--engine sudachi` / `--engine pykakasi`。CLI 可用
 `reading --verbose` 打印引擎名。
 
+<p align="center"><img src="screenshot/zh/reading.png" alt="读音示例" width="820"></p>
+
 ## 假名与罗马音
 
 纯标准库工具：
@@ -304,6 +306,8 @@ CLI（命令见快速上手与 CLI 参考）：
 | 行数一一对应、无残留假名 | 校验通过，退出码 0 |
 | 翻译行残留假名（漏译） | 警告；`--strict-warnings` 下退出码 3 |
 | 行数不匹配或结构错误 | 错误，退出码 1 |
+
+<p align="center"><img src="screenshot/zh/translation.png" alt="翻译校验示例" width="820"></p>
 
 ### 语言注册表
 
@@ -452,6 +456,8 @@ from japanese_language_core.reading import create_engine
 
 profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
 ```
+
+<p align="center"><img src="screenshot/zh/dictionary.png" alt="词典元数据示例" width="820"></p>
 
 ### 专名（JMnedict）
 
@@ -607,6 +613,15 @@ python -m japanese_language_core.translation translate
 python -m japanese_language_core.translation languages
     [--registry FILE]       列出已注册目标语言
 ```
+
+<p align="center"><img src="screenshot/zh/cli.png" alt="CLI 示例" width="820"></p>
+
+## 工作流
+
+文本 → 读音/词典 → 翻译/校验 → 导出/评测。各能力可组合成流水线，
+每一步都保持小而可测的契约。
+
+<p align="center"><img src="screenshot/zh/flow.png" alt="工作流" width="820"></p>
 
 ## 设计原则
 

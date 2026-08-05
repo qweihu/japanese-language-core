@@ -201,6 +201,8 @@ after a fallback); log it if you need to know. For strict consistency use
 `--engine sudachi` / `--engine pykakasi`. The CLI prints the engine name with
 `reading --verbose`.
 
+<p align="center"><img src="screenshot/en/reading.png" alt="Reading example" width="820"></p>
+
 ## Kana and romaji
 
 Pure standard-library utilities:
@@ -323,6 +325,8 @@ CLI outcomes (command shown in Quick start and the CLI reference):
 | One-to-one lines, no kana leak | Pass, exit code 0 |
 | Kana leak in a translation line | Warning; exit code 3 with `--strict-warnings` |
 | Line-count mismatch or structural error | Failure, exit code 1 |
+
+<p align="center"><img src="screenshot/en/translation.png" alt="Translation validation" width="820"></p>
 
 ### Language registry
 
@@ -480,6 +484,8 @@ from japanese_language_core.reading import create_engine
 
 profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
 ```
+
+<p align="center"><img src="screenshot/en/dictionary.png" alt="Dictionary metadata" width="820"></p>
 
 ### Proper nouns (JMnedict)
 
@@ -640,6 +646,15 @@ python -m japanese_language_core.translation translate
 python -m japanese_language_core.translation languages
     [--registry FILE]        list registered target languages
 ```
+
+<p align="center"><img src="screenshot/en/cli.png" alt="CLI" width="820"></p>
+
+## Workflow
+
+Text → reading/dictionary → translation/validation → export/evaluation. The
+capabilities compose as a pipeline; each step keeps a small, testable contract.
+
+<p align="center"><img src="screenshot/en/flow.png" alt="Workflow" width="820"></p>
 
 ## Design principles
 
