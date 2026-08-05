@@ -26,6 +26,10 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 | [`grammar`](#语法grammar) | 助词与常见语法型检测 |
 | [`export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
 
+> **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
+> `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
+> 消费方依赖它们，请按需使用。
+
 ## 安装
 
 需要 Python 3.10+。

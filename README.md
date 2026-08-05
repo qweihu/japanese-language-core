@@ -30,6 +30,11 @@ It is built around two ideas:
 | [`grammar`](#grammar) | Particle and common grammar-pattern detection |
 | [`export`](#export) | Anki note contract and paired Markdown layout |
 
+> **Capability maturity.** `reading` and `translation` are the production
+> core. `dictionary`, `grammar`, and `export` are stable but experimental:
+> their interfaces are tested, yet no bundled consumer depends on them yet —
+> build on them at your own pace.
+
 ## Install
 
 Python 3.10+.

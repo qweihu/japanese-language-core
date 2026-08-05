@@ -285,13 +285,34 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 
 ### P2（建议）
 
-- [ ] LLM-as-judge / 自一致校验作为可选验证器；
-- [ ] 术语表自动抽取（从 Yomitan 词条）；
-- [ ] 语法检测提供 token+PoS 输入接口；
-- [ ] 发布到 PyPI（semver + CHANGELOG + 许可证声明）；
+- [x] LLM-as-judge / 自一致校验 —— 评估后不做：核心校验应保持确定性
+  （见 5.1）；
+- [x] 术语表自动抽取 —— 评估后不做：无生产消费方，保留手动 TermGlossary；
+- [x] 语法检测提供 token+PoS 输入接口 —— 评估后不做：grammar 无生产
+  消费方（实验性）；
+- [ ] 发布到 PyPI（semver + CHANGELOG + 许可证声明）—— 押后；
 - [ ] 频率/声调格式变体兼容与文档说明；
 - [x] 占位符数量校验（同 token 出现次数不一致时告警）。
-- [ ] pytest + 覆盖率（pytest-cov）迁移与门禁。
+- [x] pytest + 覆盖率（pytest-cov）迁移与门禁 —— 评估后不做：unittest +
+  CI 已满足，迁移是纯工具链 churn（见 5.1）。
+
+### 5.1 过度设计评估与决策（2026-08-05）
+
+结论：**架构与主线不属于过度设计**——契约驱动、extras 可选依赖、CLI-first、
+公开基准集、CI 都是工业界常规做法。以下事项在现阶段属过度设计，已决定不做；
+若出现真实消费方或明确需求，再重新评估：
+
+- LLM-as-judge 验证器：二次 LLM 调用增加成本与延迟，且判断不确定，
+  与"核心校验必须确定性"的原则冲突；需要时作为外部评测工具，不进核心；
+- 术语表自动抽取：没有消费方，保留手动 `TermGlossary`；
+- 语法 PoS 接口：`grammar` 模块暂无生产消费方，先标记实验性；
+- pytest/覆盖率迁移：unittest + CI 已满足，迁移是工具链 churn；
+- 对齐算法大改：`align_reading` 暂无生产消费方，保留贪心实现 + 已知限制
+  文档；Bunomi 的 ruby 渲染走自己的 kana-run 对齐，不受影响。
+
+同时：`dictionary` / `grammar` / `export` 在 README 标注为实验性能力；
+Bunomi 自有 Yomitan 加载器与 `dictionary.yomitan` 读取器存在重复，是未来
+整合候选（Bunomi 运行正常，暂不动）。
 
 ## 6. 参考来源
 
