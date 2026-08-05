@@ -466,6 +466,10 @@ print(kanji.onyomi, kanji.kunyomi, kanji.meanings)
 | `tag_bank_*.json` | 标签定义（词性、等级、分类） |
 | `index.json` | 词典元数据 |
 
+社区词典对频率/声调数据的编码存在几种常见变体，读取器均已覆盖：频率可为
+整数或含 `value`/`frequency` 键的 dict；声调可为 `{position, category}`
+列表、整数位置或 `"n/a"`（跳过）。
+
 ### JLPT 难度分析
 
 ```python

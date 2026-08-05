@@ -153,6 +153,10 @@ print(profile.level_counts(), profile.unknown, profile.score)
 Yomitan 形式（`term_bank` / `kanji_bank` / `tag_bank` / meta bank）を読み、
 頻度・声調・JLPT タグを利用できます。
 
+頻度は整数または `value`/`frequency` キーを持つ dict、声調は
+`{position, category}` のリスト・整数位置・`"n/a"`（スキップ）という
+一般的なバリエーションに対応しています。
+
 ## 文法
 
 ```python

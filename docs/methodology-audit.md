@@ -291,7 +291,7 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [x] 语法检测提供 token+PoS 输入接口 —— 评估后不做：grammar 无生产
   消费方（实验性）；
 - [ ] 发布到 PyPI（semver + CHANGELOG + 许可证声明）—— 押后；
-- [ ] 频率/声调格式变体兼容与文档说明；
+- [x] 频率/声调格式变体兼容与文档说明（代码兼容 + README 三语说明）；
 - [x] 占位符数量校验（同 token 出现次数不一致时告警）。
 - [x] pytest + 覆盖率（pytest-cov）迁移与门禁 —— 评估后不做：unittest +
   CI 已满足，迁移是纯工具链 churn（见 5.1）。

@@ -491,6 +491,11 @@ Supported banks:
 | `tag_bank_*.json` | Tag definitions (part of speech, levels, categories) |
 | `index.json` | Dictionary metadata |
 
+Community dictionaries encode frequency and pitch data in a few common
+variants. The reader handles them all: frequency as an integer or a dict with
+a `value`/`frequency` key; pitch as a list of `{position, category}` dicts,
+an integer position, or `"n/a"` (skipped).
+
 ### JLPT difficulty analysis
 
 ```python
