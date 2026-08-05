@@ -39,21 +39,6 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 > `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
 > 消费方依赖它们，请按需使用。
 
-## 场景导航
-
-想知道"这个库能做什么"？速查：
-
-| 场景 | 模块 | 状态 |
-| --- | --- | --- |
-| 阅读与注音 | `reading` | 生产 |
-| 翻译 | `translation` | 生产 |
-| 活用形分析 | `reading.deinflect` + `reading.conjugator` | 生产 |
-| 词典查询 | `dictionary`（含搜索） | 实验 |
-| 语法 | `grammar` | 实验 |
-| 难度评估 | `dictionary.jlpt` + `dictionary.scoring` | 实验 |
-| 例句句库 | `sentences` | 新增 |
-| 闪卡挖掘 | `export.anki` | 实验 |
-
 ## 安装
 
 需要 Python 3.10+。
@@ -143,8 +128,7 @@ python3 -m japanese_language_core.translation validate \
 一起走吧。
 ```
 
-两行一一对应时校验通过（退出码 0）；翻译行残留假名会得到警告，行数不齐
-会报错——详见下方「结构校验」。
+两行一一对应时校验通过；警告与报错情形详见下方「结构校验」。
 
 ### 3. 用自带 LLM 端点翻译
 
@@ -313,20 +297,13 @@ print(warnings)  # []
 - 假名漏译（翻译行残留平假名/片假名）；
 - 术语一致性（可选）。
 
-CLI：
-
-```bash
-python3 -m japanese_language_core.translation validate \
-  --source source.txt --translation translation.txt --paired
-```
+CLI（命令见快速上手与 CLI 参考）：
 
 | 情况 | 结论 |
 | --- | --- |
 | 行数一一对应、无残留假名 | 校验通过，退出码 0 |
 | 翻译行残留假名（漏译） | 警告；`--strict-warnings` 下退出码 3 |
 | 行数不匹配或结构错误 | 错误，退出码 1 |
-
-退出码：`0` 通过、`1` 结构错误、`3` 仅警告（`--strict-warnings`）。
 
 ### 语言注册表
 
@@ -368,33 +345,11 @@ print(warnings)  # []
 
 ## BYO-LLM 翻译
 
-自带 OpenAI 兼容端点——Ollama、vLLM、LM Studio、网关均可：
-
-```python
-from japanese_language_core.translation import (
-    OpenAICompatibleTranslator, TranslationUnit,
-)
-
-translator = OpenAICompatibleTranslator(
-    base_url="http://localhost:11434/v1",  # 自动追加 /chat/completions
-    model="llama3.1",
-    api_key=None,          # 或环境变量 JAPANESE_LANGUAGE_CORE_API_KEY
-    temperature=0.2,
-    max_tokens=2048,
-)
-
-result = translator.translate(
-    [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")],
-    target_lang="zh-CN",
-)
-for unit in result.units:
-    print(unit.source, "→", unit.translation)
-```
-
-```text
-明日は晴れる。 → 明天会放晴。
-一緒に歩こう。 → 一起走吧。
-```
+自带 OpenAI 兼容端点——Ollama、vLLM、LM Studio、网关均可。配置 `base_url`
+（客户端自动追加 `/chat/completions`）、`model`、可选 `api_key`（或环境变量
+`JAPANESE_LANGUAGE_CORE_API_KEY`）、`temperature`、`max_tokens`，以及
+`max_retries` / `retry_backoff` / `max_chars_per_request`。
+可运行示例见快速上手 #3。
 
 CLI：
 

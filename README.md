@@ -44,21 +44,6 @@ It is built around two ideas:
 > their interfaces are tested, yet no bundled consumer depends on them yet —
 > build on them at your own pace.
 
-## Scenarios
-
-Quick lookup of common scenarios:
-
-| Scenario | Module | Status |
-| --- | --- | --- |
-| Reading & furigana | `reading` | Production |
-| Translation | `translation` | Production |
-| Inflection analysis | `reading.deinflect` + `reading.conjugator` | Production |
-| Dictionary lookup | `dictionary` (+ search) | Experimental |
-| Grammar | `grammar` | Experimental |
-| Difficulty estimate | `dictionary.jlpt` + `dictionary.scoring` | Experimental |
-| Sentence bank | `sentences` | New |
-| Flashcard mining | `export.anki` | Experimental |
-
 ## Install
 
 Python 3.10+.
@@ -152,9 +137,8 @@ and `translation.txt`:
 一起走吧。
 ```
 
-Pairs that line up one-to-one pass with exit code 0; a translation line
-leaking kana yields a warning, and mismatched line counts fail — see
-"Validation" below.
+Exits 0 when the lines line up; see Validation below for warning and failure
+outcomes.
 
 ### 3. Translate with your own LLM endpoint
 
@@ -332,21 +316,13 @@ Checks performed:
 - kana leakage (hiragana/katakana left in a translation line);
 - glossary consistency (optional).
 
-CLI outcomes:
-
-```bash
-python3 -m japanese_language_core.translation validate \
-  --source source.txt --translation translation.txt --paired
-```
+CLI outcomes (command shown in Quick start and the CLI reference):
 
 | Situation | Outcome |
 | --- | --- |
 | One-to-one lines, no kana leak | Pass, exit code 0 |
 | Kana leak in a translation line | Warning; exit code 3 with `--strict-warnings` |
 | Line-count mismatch or structural error | Failure, exit code 1 |
-
-Exit codes: `0` OK, `1` structural errors, `3` warnings only (with
-`--strict-warnings`).
 
 ### Language registry
 
@@ -391,33 +367,12 @@ lines.
 
 ## BYO-LLM translation
 
-Bring your own OpenAI-compatible endpoint — Ollama, vLLM, LM Studio, gateways:
-
-```python
-from japanese_language_core.translation import (
-    OpenAICompatibleTranslator, TranslationUnit,
-)
-
-translator = OpenAICompatibleTranslator(
-    base_url="http://localhost:11434/v1",  # /chat/completions is appended
-    model="llama3.1",
-    api_key=None,          # or the JAPANESE_LANGUAGE_CORE_API_KEY env var
-    temperature=0.2,
-    max_tokens=2048,
-)
-
-result = translator.translate(
-    [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")],
-    target_lang="zh-CN",
-)
-for unit in result.units:
-    print(unit.source, "→", unit.translation)
-```
-
-```text
-明日は晴れる。 → 明天会放晴。
-一緒に歩こう。 → 一起走吧。
-```
+Bring your own OpenAI-compatible endpoint — Ollama, vLLM, LM Studio, gateways.
+Configure `base_url` (the client appends `/chat/completions`), `model`,
+optional `api_key` (or the `JAPANESE_LANGUAGE_CORE_API_KEY` environment
+variable), `temperature`, `max_tokens`, plus `max_retries` /
+`retry_backoff` / `max_chars_per_request`. See Quick start #3 for a runnable
+example.
 
 CLI:
 
