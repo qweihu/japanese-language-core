@@ -27,8 +27,10 @@ It is built around two ideas:
 | [`japanese_language_core.translation`](#translation) | Line-preserving contract, validation, language registry, glossary checks |
 | [`japanese_language_core.translation.provider`](#byo-llm-translation) | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
 | [`japanese_language_core.dictionary`](#dictionary) | Yomitan-format dictionary reader + JLPT difficulty analysis |
+| [`japanese_language_core.dictionary.jmnedict`](#proper-nouns-jmnedict) | Proper-noun lookup (JMnedict): readings and categories |
 | [`japanese_language_core.grammar`](#grammar) | Particle and common grammar-pattern detection |
 | [`japanese_language_core.export`](#export) | Anki note contract and paired Markdown layout |
+| [`japanese_language_core.export.mining`](#mining-pipeline) | Anki mining pipeline contract (sentence → note → payload) |
 | [`japanese_language_core.sentences`](#sentence-bank) | Tatoeba sentence bank reader (CC BY 2.0 data) |
 
 > **Capability maturity.** `reading` and `translation` are the production
@@ -38,8 +40,7 @@ It is built around two ideas:
 
 ## Scenarios
 
-Want to know "what can I do with this?" — the scenario map in
-[docs/scenarios.md](docs/scenarios.md) is the navigation hub. Quick lookup:
+Quick lookup of common scenarios:
 
 | Scenario | Module | Status |
 | --- | --- | --- |
@@ -259,8 +260,7 @@ this function is the deterministic fallback. Its greedy choice is a valid but
 not necessarily dictionary-identical distribution (e.g. 好き嫌い → 好=す,
 き=き, 嫌=きら); use dictionary-embedded furigana data when you need
 community identical alignment (the reader supports a per-kanji `furigana`
-extension field when a dictionary provides it). Known limitation documented
-in docs/scenarios.md.
+extension field when a dictionary provides it). Known limitation.
 
 ## Deinflection
 
@@ -519,6 +519,49 @@ from japanese_language_core.reading import create_engine
 
 profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
 ```
+
+### Proper nouns (JMnedict)
+
+```python
+names = dictionary.lookup_names("山田")
+print(names[0].readings, names[0].categories)
+```
+
+```text
+('やまだ',) ['surname']
+```
+
+`NameEntry` carries readings, categories (surname/given/place/organization/
+...), and an optional definition. The JMnedict pattern — an empty reading
+column with kana readings stored in the definitions slot — is handled too.
+
+### Search, pitch, scoring, stroke order
+
+```python
+from japanese_language_core.dictionary import (
+    classify, KanjiVGReader, pattern, readability,
+)
+
+dictionary.search("日本", "prefix")       # prefix / substring / wildcard
+pattern(4, 2)                             # ('H', 'H', 'L', 'L') → 中高
+classify(4, 2)                            # "中高 nakadaka"
+readability(profile)                      # 0..1, higher = easier
+KanjiVGReader("path/to/kanjivg").lookup("日")  # strokes, radical (data self-provided)
+```
+
+### Sentence bank
+
+```python
+from japanese_language_core.sentences import SentenceBank
+
+bank = SentenceBank.from_tatoeba("jpn_sentences.tsv", "jpn-cmn_links.tsv")
+examples = bank.lookup("日本語")
+for sentence in examples:
+    print(sentence.text, "→", [t.text for t in bank.translations(sentence.id)])
+```
+
+Reads Tatoeba sentence/link exports (CC BY 2.0); fetching and decompressing
+the export files is the caller's concern.
 
 ## Grammar
 

@@ -23,8 +23,10 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 | [`japanese_language_core.translation`](#翻译translation) | 逐句契约、校验、语言注册表、术语一致性 |
 | [`japanese_language_core.translation.provider`](#byo-llm-翻译) | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
 | [`japanese_language_core.dictionary`](#词典dictionary) | Yomitan 词典读取 + JLPT 难度分析 |
+| [`japanese_language_core.dictionary.jmnedict`](#专名jmnedict) | 专名查询（JMnedict）：读音与类别 |
 | [`japanese_language_core.grammar`](#语法grammar) | 助词与常见语法型检测 |
 | [`japanese_language_core.export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
+| [`japanese_language_core.export.mining`](#闪卡挖掘mining) | Anki 挖句流水线契约（句 → 笔记 → payload） |
 | [`japanese_language_core.sentences`](#例句句库sentences) | Tatoeba 句库读取器（数据 CC BY 2.0） |
 
 > **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
@@ -33,8 +35,7 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 
 ## 场景导航
 
-想知道"这个库能做什么"？完整地图见
-[docs/scenarios.md](docs/scenarios.md)，这里是速查：
+想知道"这个库能做什么"？速查：
 
 | 场景 | 模块 | 状态 |
 | --- | --- | --- |
@@ -243,8 +244,7 @@ print(align_reading("日本語", "にほんご"))
 歧义复合词（好き嫌い）可能需要词典级对齐，`dictionary` 能力可提供线索；
 该函数是确定性回退。贪心选择是合法但未必与社区词典一致的分布
 （如 好き嫌い → 好=す、き=き、嫌=きら）；需要与词典一致时请使用带读音
-分布的词典数据（读取器支持词条内 `furigana` 扩展字段）。已知限制见
-docs/scenarios.md。
+分布的词典数据（读取器支持词条内 `furigana` 扩展字段）。已知限制。
 
 ## 活用形还原
 
@@ -491,6 +491,47 @@ from japanese_language_core.reading import create_engine
 
 profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
 ```
+
+### 专名（JMnedict）
+
+```python
+names = dictionary.lookup_names("山田")
+print(names[0].readings, names[0].categories)
+```
+
+```text
+('やまだ',) ['surname']
+```
+
+`NameEntry` 携带读音、类别（姓氏/名字/地名/组织/…）与可选释义；
+兼容 JMnedict 的"读音列为空、释义槽放假名读音"格式。
+
+### 搜索、声调、难度打分与笔顺
+
+```python
+from japanese_language_core.dictionary import (
+    classify, KanjiVGReader, pattern, readability,
+)
+
+dictionary.search("日本", "prefix")       # prefix / substring / wildcard
+pattern(4, 2)                             # ('H', 'H', 'L', 'L') → 中高
+classify(4, 2)                            # "中高 nakadaka"
+readability(profile)                      # 0..1，越大越简单
+KanjiVGReader("path/to/kanjivg").lookup("日")  # 笔顺与部首（数据自备）
+```
+
+### 例句句库（sentences）
+
+```python
+from japanese_language_core.sentences import SentenceBank
+
+bank = SentenceBank.from_tatoeba("jpn_sentences.tsv", "jpn-cmn_links.tsv")
+examples = bank.lookup("日本語")
+for sentence in examples:
+    print(sentence.text, "→", [t.text for t in bank.translations(sentence.id)])
+```
+
+读取 Tatoeba 句表与链接导出（CC BY 2.0）；下载与解压由调用方负责。
 
 ## 语法（grammar）
 

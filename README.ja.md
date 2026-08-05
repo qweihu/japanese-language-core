@@ -17,9 +17,9 @@ Nihongo Core は Python 向けのプロフェッショナルな日本語処理�
 
 ## シナリオナビ
 
-「何ができるか」の全体像は [docs/scenarios.md](docs/scenarios.md) を参照：
 読み・翻訳・活用形は本番、辞書・文法・難易度は実験的、例文バンク
-（`sentences`）は新規追加です。
+（`sentences`）、専名（`dictionary.jmnedict`）、挖句（`export.mining`）
+は新規追加です。
 
 ## インストール
 
