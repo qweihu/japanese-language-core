@@ -8,6 +8,21 @@ description: 共享日语翻译能力：把带或不带 ruby 注音的日语文�
 供 Bunomi、Utayomi 等日语类技能复用。翻译的输入/输出契约、语言约定和结构校验
 统一由 `japanese-language-core` 的 `translation` 模块提供，调用方只负责自己的排版。
 
+## Agent 调用方式（CLI-first）
+
+确定性操作优先使用统一 CLI（一个入口），不要手写解析逻辑：
+
+```bash
+python3 -m japanese_language_core validate --source source.txt --translation translation.txt --paired
+python3 -m japanese_language_core translate --source source.txt --base-url <BASE_URL> --model <MODEL>
+python3 -m japanese_language_core languages
+```
+
+- 在项目虚拟环境中运行：先 `source .venv/bin/activate`，或直接使用
+  `.venv/bin/python -m japanese_language_core ...`；
+- CLI 退出码：0 通过 / 1 结构错误 / 3 仅警告（`--strict-warnings`）；
+- 只有需要程序化集成时才 import Python API。
+
 ## 翻译执行模式
 
 - **Agent 模式（默认）**：由 Agent 按本技能的 `references/` 语言约定逐句翻译，
@@ -16,7 +31,7 @@ description: 共享日语翻译能力：把带或不带 ruby 注音的日语文�
   使用 `OpenAICompatibleTranslator` 或 CLI：
 
   ```bash
-  python3 -m japanese_language_core.translation translate \
+  python3 -m japanese_language_core translate \
     --source source.txt --base-url <BASE_URL> --model <MODEL>
   ```
 
@@ -53,7 +68,7 @@ core 不内置供应商、不打包密钥。
 4. 运行结构校验：
 
    ```bash
-   python3 -m japanese_language_core.translation validate \
+   python3 -m japanese_language_core validate \
      --source source.txt --translation translation.txt --paired
    ```
 

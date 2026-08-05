@@ -34,6 +34,18 @@ It is built around two ideas:
 
 Python 3.10+.
 
+### Virtual environments (recommended)
+
+Always install into a virtual environment so your system Python stays clean.
+If you do not have one yet, create it first:
+
+```bash
+python3 -m venv .venv          # create the environment
+source .venv/bin/activate      # macOS/Linux; Windows: .venv\Scripts\activate
+```
+
+Then run the commands below inside the activated environment.
+
 ```bash
 # reading only (Sudachi / Fugashi / PyKakasi)
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"

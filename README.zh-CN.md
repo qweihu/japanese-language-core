@@ -30,6 +30,17 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 
 需要 Python 3.10+。
 
+### 虚拟环境（推荐）
+
+始终在虚拟环境里安装，避免污染系统 Python。还没有虚拟环境时先创建：
+
+```bash
+python3 -m venv .venv          # 创建环境
+source .venv/bin/activate      # macOS/Linux；Windows: .venv\Scripts\activate
+```
+
+然后在已激活的环境中执行下面的安装命令。
+
 ```bash
 # 仅读音（Sudachi / Fugashi / PyKakasi）
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"

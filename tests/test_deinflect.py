@@ -36,6 +36,25 @@ class DeinflectTests(unittest.TestCase):
     def test_causative_potential(self):
         self.assertIn("食べる", words("食べさせられる"))
 
+    def test_casual_contractions(self):
+        self.assertIn("食べる", words("食べちゃう"))
+        self.assertIn("行く", words("行っちゃう"))
+        self.assertIn("飲む", words("飲んじゃう"))
+        self.assertIn("やる", words("やっとく"))
+
+    def test_casual_progressive(self):
+        self.assertIn("食べる", words("食べてる"))
+        self.assertIn("食べる", words("食べてた"))
+
+    def test_polite_and_suggestion(self):
+        self.assertIn("食べる", words("食べてください"))
+        self.assertIn("食べる", words("食べたほうがいい"))
+        self.assertIn("高い", words("高そうです"))
+
+    def test_experience_and_recollection(self):
+        self.assertIn("食べる", words("食べることがある"))
+        self.assertIn("食べる", words("食べたっけ"))
+
 
 if __name__ == "__main__":
     unittest.main()

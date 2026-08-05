@@ -13,6 +13,18 @@ Nihongo Core は Python 向けのプロフェッショナルな日本語処理�
 
 ## インストール
 
+### 仮想環境（推奨）
+
+システム Python を汚さないよう、必ず仮想環境にインストールしてください。
+まだない場合は先に作成：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+```
+
+アクティベート後に以下のコマンドを実行します。
+
 ```bash
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
 ```

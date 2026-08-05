@@ -29,6 +29,9 @@ all = [
   "sudachidict-core>=20230110",
 ]
 
+[project.scripts]
+nihongo = "japanese_language_core.__main__:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

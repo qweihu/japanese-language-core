@@ -60,6 +60,8 @@ class YomitanDictionary:
                         self._load_json(archive, name)
                     )
         self._tag_defs = self._build_tags()
+        self._term_meta_index = self._build_term_meta_index()
+        self._kanji_freq = self._build_kanji_freq()
         self._term_index = self._build_term_index()
         self._kanji_index = self._build_kanji_index()
 
@@ -116,11 +118,7 @@ class YomitanDictionary:
     def _term_meta(self, expression: str) -> tuple[FrequencyTag | None, list[PitchAccent]]:
         frequency: FrequencyTag | None = None
         accents: list[PitchAccent] = []
-        for row in self._meta.get("term", []):
-            if len(row) < 3 or str(row[0]) != expression:
-                continue
-            mode = str(row[1])
-            data = row[2]
+        for mode, data in self._term_meta_index.get(expression, []):
             if mode == "freq":
                 if isinstance(data, (int, float)):
                     frequency = FrequencyTag(value=data, source=self.index.title)
@@ -141,6 +139,25 @@ class YomitanDictionary:
                             )
                         )
         return frequency, accents
+
+    def _build_term_meta_index(self) -> dict[str, list[tuple[str, object]]]:
+        index: dict[str, list[tuple[str, object]]] = {}
+        for row in self._meta.get("term", []):
+            if len(row) < 3:
+                continue
+            index.setdefault(str(row[0]), []).append((str(row[1]), row[2]))
+        return index
+
+    def _build_kanji_freq(self) -> dict[str, int | float]:
+        result: dict[str, int | float] = {}
+        for row in self._meta.get("kanji", []):
+            if (
+                len(row) >= 3
+                and str(row[1]) == "freq"
+                and isinstance(row[2], (int, float))
+            ):
+                result[str(row[0])] = row[2]
+        return result
 
     def _build_term_index(self) -> dict[str, list[TermEntry]]:
         index: dict[str, list[TermEntry]] = {}
@@ -184,16 +201,10 @@ class YomitanDictionary:
             meanings = list(row[4]) if len(row) > 4 and isinstance(row[4], list) else []
             stats = dict(row[5]) if len(row) > 5 and isinstance(row[5], dict) else {}
             frequency: FrequencyTag | None = None
-            for meta_row in self._meta.get("kanji", []):
-                if (
-                    len(meta_row) >= 3
-                    and str(meta_row[0]) == character
-                    and str(meta_row[1]) == "freq"
-                    and isinstance(meta_row[2], (int, float))
-                ):
-                    frequency = FrequencyTag(
-                        value=meta_row[2], source=self.index.title
-                    )
+            if character in self._kanji_freq:
+                frequency = FrequencyTag(
+                    value=self._kanji_freq[character], source=self.index.title
+                )
             index.setdefault(character, []).append(
                 KanjiEntry(
                     character=character,
