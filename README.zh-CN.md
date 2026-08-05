@@ -1,194 +1,75 @@
-<div align="center">
+# Nihongo Core（japanese-language-core）
 
-# japanese-reading-core
+Bunomi 与 Utayomi 共享的日语语言能力核心：上下文读音、假名/罗马音、
+读音-汉字对齐、活用形还原、逐句翻译契约、词典元数据、语法型检测与导出契约。
 
-**一个保持原文、理解上下文的 Python 日语读音引擎。**
+默认零依赖；重依赖（Sudachi/Fugashi/PyKakasi）只在安装 `[reading]` 扩展时引入。
 
-日语不能简单地逐字读取。本项目结合形态素分析、上下文读音、假名规范化和稳定的 token
-接口，为振假名、学习工具、搜索和无障碍应用提供可复用的读音基础能力。
+## 能力
 
-[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+| 模块 | 内容 |
+| --- | --- |
+| `reading` | 保原文的分词 + 上下文读音（Sudachi 优先、PyKakasi 回退） |
+| `reading.kana` | 假名转换、全半角归一、Hepburn 罗马音（纯标准库） |
+| `reading.alignment` | 读音分配到汉字（furigana 对齐） |
+| `reading.deinflect` | 变形 → 辞書形 候选（尽力而为） |
+| `translation` | 逐句翻译契约、结构校验、语言注册表、术语一致性 |
+| `translation.provider` | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
+| `dictionary` | Yomitan 词典读取（term/kanji/tag/meta bank）+ JLPT 难度分析 |
+| `grammar` | 助词与常见语法型的确定性检测 |
+| `export` | Anki 笔记契约与中日对照 Markdown 契约 |
 
-</div>
+## 安装
 
-## 项目概览
-
-`japanese-reading-core` 将日文转换为保持原文的 `ReadingToken`。每个 token 包含原文片段、
-平假名读音和可选的 Hepburn 罗马音。
-
-项目只关注“日语应该怎么读”这一层：
-
-- 将日文切分为有上下文意义的词法单元；
-- 从上下文形态素引擎获取读音；
-- 首选引擎不可用时提供确定性的回退路径；
-- 保留输入中的字符、空格、标点和换行；
-- 用小而稳定的接口让应用能够测试和版本化。
-
-它不依赖大模型猜读音，也不强迫调用方使用某一种 HTML 或 Markdown 渲染方式。
-
-## 处理流程
-
-```text
-日文输入
-  ↓
-保留行结构与空白
-  ↓
-上下文词法分析
-  ↓
-读音规范化
-  ↓
-ReadingToken(orig, hira, hepburn)
-  ↓
-由应用决定如何渲染或分析
+```bash
+python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
 ```
 
-例如，`降り止む` 会被作为一个上下文词法单元处理，得到 `ふりやむ`。调用方再根据自己的
-输出格式决定如何将这个读音和汉字、送假名对齐。
+`[translation]` 只需标准库，`[all]` 安装全部。
 
-## 核心接口
+## 快速上手
 
 ```python
-from japanese_reading_core import ReadingToken, create_engine
+from japanese_language_core.reading import create_engine
+from japanese_language_core.translation import OpenAICompatibleTranslator, TranslationUnit
 
 engine = create_engine("auto")
 tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
 
-assert all(isinstance(token, ReadingToken) for token in tokens)
-assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
+translator = OpenAICompatibleTranslator(
+    base_url="http://localhost:11434/v1", model="llama3.1",
+)
+result = translator.translate([TranslationUnit("明日は晴れる。")], target_lang="zh-CN")
 ```
 
-| 字段 | 含义 |
-| --- | --- |
-| `orig` | 原文表面片段；所有片段拼接后必须还原输入 |
-| `hira` | 规范化后的平假名读音；没有读音时为空字符串 |
-| `hepburn` | 可选的 Hepburn 罗马音 |
-
-调用方应依赖 `ReadingEngine.tokens(text)` 和 `ReadingToken`，而不应依赖 Sudachi 的
-`Morpheme`、Fugashi tag 对象或第三方词典内部结构。
-
-## 引擎模式
-
-| 模式 | 行为 | 适用场景 |
-| --- | --- | --- |
-| `auto` | 优先 Sudachi，不可用时回退 PyKakasi | 普通应用使用 |
-| `sudachi` | 严格要求 Sudachi 和其词典 | 生产与 CI 检查 |
-| `pykakasi` | 使用 Fugashi/PyKakasi 路径 | 兼容和对比测试 |
-
-严格模式初始化失败时会抛出 `EngineUnavailableError`，不会静默改变调用方指定的模式。
-
-## 安装
-
-从 GitHub 的当前版本标签安装：
+校验 CLI：
 
 ```bash
-python3 -m pip install \
-  "japanese-reading-core @ git+https://github.com/qweihu/japanese-reading-core.git@v0.1.0"
+python3 -m japanese_language_core.translation validate \
+  --source source.txt --translation translation.txt --paired
 ```
-
-本地开发：
-
-```bash
-git clone https://github.com/qweihu/japanese-reading-core.git
-cd japanese-reading-core
-python3 -m pip install -e .
-```
-
-当前支持 Python 3.10 及以上版本，使用 SudachiPy、`sudachidict-core`、Fugashi、UniDic-lite
-和 PyKakasi 作为读音适配器。
 
 ## 设计原则
 
-### 先理解上下文，再处理字符
+- 能力按子模块按需导入，顶层不 import 重模块；
+- 契约小而可测（`ReadingToken`、`TranslationUnit`、词典模型）；
+- 翻译是 LLM 能力：core 只定义契约/约定/校验，执行者是 Agent（技能模式）
+  或用户自带端点（BYO-LLM）；
+- `japanese_reading_core` 是迁移期兼容垫片，新代码请用
+  `japanese_language_core.reading`。
 
-日语读音依赖词法边界、活用和上下文。引擎先让形态素分析器判断上下文词，再由应用决定
-如何做视觉上的送假名对齐。
+## 边界
 
-### 原文保真是不变量
+不包含：翻译引擎本体、歌词抓取/清洗（Utayomi 产品层）、渲染器、用户数据、
+云服务与 API 密钥。
 
-空格、标点、拉丁字母、假名、换行和未知片段都必须可追溯。调用方可以通过拼接所有
-`orig` 字段检查结果是否完整。
-
-### 证据和渲染分离
-
-更高层的应用可以把词典作为候选或审计证据，但本包不会用孤立的词典查找静默覆盖主引擎
-结果，也不会携带用户数据、词典缓存或应用策略。
-
-### 小接口更容易审计
-
-本包暴露的是适配器和规范化后的值，而不是底层 NLP 库的内部对象图。这样可以让集成更容易
-测试，并让引擎升级通过版本化的行为变化显现出来。
-
-## 方法论与开源基础
-
-本项目建立在日语语言处理社区长期积累的工作之上。我们特别尊重并感谢那些让上下文词法分析、
-日语词典和假名转换能够作为开源基础能力被复用的研究者与维护者。
-
-这里把“方法论来源”和“运行时组件”明确列出：
-
-- **[Sudachi / Sudachi.rs](https://github.com/WorksApplications/sudachi.rs)**：提供上下文日语形态素分析、
-  多粒度切分、规范化和读音形式。本项目遵循“先根据上下文词法单元判断读音，再处理显示”的原则，
-  而不是孤立地给每个汉字查音。Sudachi 官方资料还引用了 Takaoka 等人的论文 *Sudachi: a Japanese
-  Tokenizer for Business*（LREC 2018）。
-- **[SudachiDict](https://github.com/WorksApplications/SudachiDict)**：Sudachi 路径使用的系统词典。
-  分词器的效果依赖词典资源，因此词典版本也是可复现读音行为的一部分。
-- **[fugashi](https://github.com/polm/fugashi) 与
-  [MeCab](https://github.com/taku910/mecab)**：兼容路径所依赖的日语分词和词典集成传统。fugashi
-  提供了适合 Python 应用使用的形态素处理接口。
-- **[UniDic-lite](https://github.com/polm/unidic-lite)**：可通过 pip 安装的较小 UniDic 资源发行包，
-  用于 Fugashi 回退和兼容场景。
-- **[PyKakasi](https://github.com/miurahr/pykakasi)**：提供假名/汉字转换和 Hepburn 罗马音能力。本项目
-  用它作为回退引擎，也用它把 Sudachi 产生的读音转换为罗马音。
-
-### 许可证与署名说明
-
-以上项目属于依赖或外部语言资源，本仓库没有重新实现它们，也不主张拥有它们的成果。各组件继续
-适用其原项目的许可证和声明：
-
-| 组件 | 上游许可证 / 声明 |
-| --- | --- |
-| Sudachi / Sudachi.rs | Apache-2.0 |
-| SudachiDict | Apache-2.0 |
-| fugashi | MIT；其发行包同时涉及 MeCab 和词典声明 |
-| MeCab | BSD 风格许可证，详见上游和 fugashi 说明 |
-| UniDic-lite | 包代码采用 MIT 或 WTFPL；UniDic 数据适用其自身声明，包括 BSD 条款 |
-| PyKakasi | GPL-3.0-or-later，并包含项目说明中的 KAKASI 和 UniDic 署名信息 |
-
-这些依赖由环境单独安装，本仓库不将它们复制进源码。重新分发包含这些依赖的环境或二进制文件时，
-应保留相应的上游许可证文本和声明。具体法律条款以上游项目为准。
-
-本仓库的 MIT License 只适用于本仓库中的原创代码，不会重新授权或替代任何依赖项目的许可证。
-
-## 范围与非目标
-
-本仓库不是：
-
-- 日语语言检测器；
-- 振假名或 HTML 渲染器；
-- 翻译系统；
-- 歌词抓取或清洗工具；
-- Yomitan/JMdict 数据发行包；
-- 用户数据存储或远程服务。
-
-这些能力可以由独立层实现，而不改变核心读音接口。
-
-## 测试与复现
+## 测试
 
 ```bash
 python3 -m unittest discover -s tests -v
-python3 -m build --wheel
 ```
 
-测试覆盖上下文读音、PyKakasi 选择、原文重建、空白与换行保留、假名规范化和非法引擎处理。
-读音行为会随版本记录，应用应依赖版本标签或有边界的版本范围，而不是未经审计的移动分支。
+## 许可
 
-## 路线图
-
-- 扩充经过审阅的上下文读音样本；
-- 增加歧义读音和不可用引擎的诊断信息；
-- 评估可选词典证据，但不耦合核心 API；
-- 发布稳定版本和兼容性说明；
-- 使用独立维护的日语语料进行准确性评估。
-
-## 许可证
-
-MIT License，详见 [LICENSE](LICENSE)。
+MIT。依赖的开源组件（Sudachi、Fugashi、PyKakasi、UniDic、Yomitan 词典格式）
+各自保留其许可证。

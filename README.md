@@ -1,259 +1,161 @@
-<div align="center">
+# Nihongo Core（japanese-language-core）
 
-# japanese-reading-core
+Shared Japanese language capabilities for **Bunomi** and **Utayomi**:
+contextual reading, kana/romaji, furigana alignment, deinflection,
+line-preserving translation contracts, dictionary metadata, grammar
+patterns, and export contracts.
 
-**A source-preserving, context-aware Japanese reading engine for Python.**
+The package is dependency-light by default: `japanese-language-core` alone has
+zero runtime dependencies. Capabilities opt into heavy libraries only when
+they need them.
 
-Japanese text is not read one character at a time. This project combines
-morphological analysis, contextual readings, normalized kana, and a small
-stable token contract so applications can build reliable furigana, ruby,
-learning, search, and accessibility experiences on top of it.
+## Capabilities
 
-[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
-
-</div>
-
-## Overview
-
-`japanese-reading-core` converts Japanese text into source-preserving
-`ReadingToken` values. Each token carries the original surface text, a
-hiragana reading, and an optional Hepburn romanization.
-
-The package focuses on the reading problem itself:
-
-- segmenting Japanese text into meaningful contextual units;
-- obtaining readings from a context-aware morphological engine;
-- providing a deterministic fallback when the preferred engine is unavailable;
-- preserving every input character, whitespace, and line ending;
-- exposing a small interface that application code can test and version.
-
-It does not guess readings in an LLM prompt, and it does not force every
-consumer to depend on a particular HTML or Markdown renderer.
-
-## How it works
-
-```text
-Japanese text
-    ↓
-line / whitespace preservation
-    ↓
-contextual tokenization
-    ↓
-reading normalization
-    ↓
-ReadingToken(orig, hira, hepburn)
-    ↓
-application-specific rendering or analysis
-```
-
-For example, the engine treats `降り止む` as a contextual lexical unit and
-returns `ふりやむ`. A consumer can then decide how to align that reading with
-the kanji and okurigana in its own output format.
-
-## Core contract
-
-```python
-from japanese_reading_core import ReadingToken, create_engine
-
-engine = create_engine("auto")
-tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
-
-assert all(isinstance(token, ReadingToken) for token in tokens)
-assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
-```
-
-`ReadingToken` is intentionally small:
-
-| Field | Meaning |
+| Module | What it provides |
 | --- | --- |
-| `orig` | The exact source surface fragment. All fragments reconstruct the input. |
-| `hira` | A normalized hiragana reading, or an empty string when no reading is available. |
-| `hepburn` | Optional Hepburn romanization of the reading. |
+| `reading` | Source-preserving tokenization + contextual readings (Sudachi preferred, PyKakasi fallback), `ReadingToken` contract |
+| `reading.kana` | Hiragana/katakana conversion, width normalization, Hepburn romaji (pure Python) |
+| `reading.alignment` | Distribute a reading across kanji (furigana alignment for ruby) |
+| `reading.deinflect` | Best-effort conjugated form → dictionary form candidates |
+| `translation` | Line-preserving translation contract, validation, language registry, glossary consistency |
+| `translation.provider` | Agent mode (no API) or BYO-LLM mode (any OpenAI-compatible endpoint) |
+| `dictionary` | Yomitan-format dictionary reader (term/kanji/tag/meta banks) + JLPT difficulty analysis |
+| `grammar` | Deterministic particle and common grammar-pattern detection |
+| `export` | Anki note contract and paired Markdown layout contract |
 
-The public engine boundary is:
-
-```python
-class ReadingEngine(Protocol):
-    def tokens(self, text: str) -> Iterable[ReadingToken]: ...
-```
-
-Consumers should depend on this contract, not on Sudachi's `Morpheme`,
-Fugashi tag objects, or third-party dictionary internals.
-
-## Engine modes
-
-| Mode | Behavior | Best for |
-| --- | --- | --- |
-| `auto` | Prefer Sudachi; fall back to PyKakasi if unavailable | Normal application use |
-| `sudachi` | Require Sudachi and its dictionary | Strict production and CI checks |
-| `pykakasi` | Use the Fugashi/PyKakasi fallback path | Compatibility and comparison |
-
-```python
-engine = create_engine("sudachi")
-```
-
-If a strict engine cannot be initialized, the package raises
-`EngineUnavailableError`. It does not silently change a requested strict mode.
-
-## Installation
-
-Install the current release tag directly from GitHub:
+## Install
 
 ```bash
-python3 -m pip install \
-  "japanese-reading-core @ git+https://github.com/qweihu/japanese-reading-core.git@v0.1.0"
+# reading only (Sudachi / Fugashi / PyKakasi)
+python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+
+# translation only (standard library)
+python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+
+# everything
+python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
 ```
 
 For local development:
 
 ```bash
-git clone https://github.com/qweihu/japanese-reading-core.git
-cd japanese-reading-core
-python3 -m pip install -e .
+git clone https://github.com/qweihu/japanese-language-core.git
+cd japanese-language-core
+python3 -m pip install -e ".[reading]"
 ```
 
-The package currently supports Python 3.10+ and uses SudachiPy,
-`sudachidict-core`, Fugashi, UniDic-lite, and PyKakasi as its reading
-adapters.
+## Quickstart
 
-## Reading example
+### Reading
 
 ```python
-from japanese_reading_core import create_engine
+from japanese_language_core.reading import create_engine
 
-text = "雨が降り止むまでは帰れない"
 engine = create_engine("auto")
-
-for token in engine.tokens(text):
+tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
+assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
+for token in tokens:
     print(token.orig, token.hira, token.hepburn)
 ```
 
-The library returns reading data. Rendering it as HTML ruby, Markdown,
-plain-text annotations, or another representation remains the responsibility
-of the consuming application.
+### Translation validation
+
+```bash
+python3 -m japanese_language_core.translation validate \
+  --source source.txt --translation translation.txt --paired
+```
+
+### BYO-LLM translation
+
+Bring your own OpenAI-compatible endpoint (Ollama, vLLM, gateways...):
+
+```bash
+python3 -m japanese_language_core.translation translate \
+  --source source.txt --base-url http://localhost:11434/v1 \
+  --model llama3.1
+```
+
+Or in Python:
+
+```python
+from japanese_language_core.translation import (
+    OpenAICompatibleTranslator, TranslationUnit,
+)
+
+translator = OpenAICompatibleTranslator(
+    base_url="http://localhost:11434/v1", model="llama3.1",
+)
+result = translator.translate(
+    [TranslationUnit("明日は晴れる。")], target_lang="zh-CN",
+)
+print(result.units[0].translation)
+```
+
+The package never bundles a provider or an API key. `AgentTranslator` marks
+the Agent-as-translator mode used by the `japanese-translation` skill: the
+Agent translates and the same `validate_translation` contract is applied.
+
+### Deinflection
+
+```python
+from japanese_language_core.reading import deinflect
+
+for candidate in deinflect("食べていました"):
+    print(candidate.word, candidate.reason)
+```
+
+### Dictionary metadata (Yomitan format)
+
+```python
+from japanese_language_core.dictionary import YomitanDictionary, analyze_difficulty
+
+dictionary = YomitanDictionary("JMdict.zip")
+terms = dictionary.lookup_terms("日本語")
+profile = analyze_difficulty("日本語を勉強する。", dictionary)
+print(profile.level_counts())
+```
+
+### Grammar
+
+```python
+from japanese_language_core.grammar import find_grammar, find_particles
+
+print([m.particle for m in find_particles("私は東京へ行く。")])
+print([m.name for m in find_grammar("食べているところです。")])
+```
 
 ## Design principles
 
-### Context before characters
+- **Capabilities are opt-in submodules.** The top-level package imports
+  nothing heavy; a translation-only install stays dependency-free.
+- **Deterministic contracts.** `ReadingToken`, `TranslationUnit`, and the
+  dictionary model are small, testable, versioned interfaces.
+- **Translation is an LLM capability.** The core defines the contract,
+  conventions, and validation; the actual translation is performed by the
+  Agent (skill mode) or a user-supplied model endpoint (BYO-LLM).
+- **Compatibility.** `japanese_reading_core` is a thin re-export shim during
+  the migration; new code imports `japanese_language_core.reading`.
 
-Japanese readings depend on lexical boundaries, inflection, and context. The
-engine asks a morphological analyzer for a reading of a contextual unit
-before an application performs any visual alignment.
-
-### Source preservation is an invariant
-
-Whitespace, punctuation, Latin text, kana, line endings, and unknown fragments
-must remain observable. A consumer can reject or report a broken result by
-checking the concatenated `orig` fields.
-
-### Evidence and rendering stay separate
-
-Dictionary data can be used by a higher-level application as candidate or
-audit evidence. This package does not silently overwrite the primary engine's
-result with an unrelated dictionary lookup, and it does not bundle user data,
-dictionary caches, or application-specific policy.
-
-### Small interfaces are easier to audit
-
-The package exposes adapters and normalized values, not the internal object
-graphs of its underlying NLP libraries. This keeps integrations testable and
-makes engine upgrades visible through versioned behavior changes.
-
-## Methodology & open-source foundations
-
-This project is built on the work of the Japanese-language processing
-community. We are grateful to the researchers and maintainers who made
-contextual tokenization, Japanese dictionaries, and kana conversion available
-as reusable open-source building blocks.
-
-The influences and runtime components are intentionally described separately:
-
-- **[Sudachi / Sudachi.rs](https://github.com/WorksApplications/sudachi.rs)** —
-  contextual Japanese morphological analysis, multi-granular segmentation,
-  normalization, and reading forms. Our engine follows the principle that a
-  reading should be obtained from a contextual lexical unit rather than from
-  isolated characters. Sudachi also points to the paper *Sudachi: a Japanese
-  Tokenizer for Business* by Takaoka et al. (LREC 2018).
-- **[SudachiDict](https://github.com/WorksApplications/SudachiDict)** — the
-  system lexicon used by the Sudachi path. A tokenizer is only as useful as
-  the lexical resources that support it, so dictionary releases are part of
-  reproducible reading behavior.
-- **[fugashi](https://github.com/polm/fugashi) and
-  [MeCab](https://github.com/taku910/mecab)** — the Japanese tokenization and
-  dictionary integration tradition behind the compatibility path. fugashi's
-  Python interface makes morphological processing practical in application
-  code.
-- **[UniDic-lite](https://github.com/polm/unidic-lite)** — a pip-installable
-  distribution of a smaller UniDic resource, used with the Fugashi adapter for
-  fallback and compatibility scenarios.
-- **[PyKakasi](https://github.com/miurahr/pykakasi)** — kana/kanji
-  transliteration and Hepburn romanization support. We use it both for the
-  fallback engine and for romanization of readings produced by Sudachi.
-
-### License and attribution notes
-
-The projects above are dependencies or external language resources; they are
-not reimplemented or claimed by this repository. Their licenses and notices
-remain applicable to their respective components:
-
-| Component | Upstream license / notice |
-| --- | --- |
-| Sudachi / Sudachi.rs | Apache-2.0 |
-| SudachiDict | Apache-2.0 |
-| fugashi | MIT; its distribution also relates to MeCab and dictionary notices |
-| MeCab | BSD-style license, as documented by its upstream and fugashi |
-| UniDic-lite | MIT or WTFPL for the package code; UniDic data is distributed under its own notice, including BSD terms |
-| PyKakasi | GPL-3.0-or-later, with additional KAKASI and UniDic attribution described by the project |
-
-These dependencies are installed separately and are not vendored into this
-repository. Anyone redistributing an environment or binary that includes them
-should preserve the relevant upstream license texts and notices. See the
-linked upstream repositories for the authoritative license terms.
-
-The MIT license in this repository applies only to the original code in this
-repository; it does not relicense or replace the licenses of its dependencies.
-
-## Scope and non-goals
+## Boundaries (non-goals)
 
 This repository is intentionally not:
 
-- a Japanese language detector;
-- a furigana or HTML renderer;
-- a translation system;
-- a lyric acquisition or cleaning tool;
-- a Yomitan/JMdict distribution;
-- a user-data store or remote service.
+- a translation engine itself (translation is an LLM capability);
+- a lyric acquisition/cleaning tool (that is Utayomi's product layer);
+- a furigana/HTML renderer, a language detector, or a user-data store;
+- a cloud service or a provider of API keys.
 
-Those concerns can be implemented by separate layers without changing the
-reading contract.
+The `japanese-translation` skill in `skills/` is the Agent-facing workflow
+that consumes this core; Bunomi and Utayomi remain the product layers.
 
-## Testing and reproducibility
-
-Run the unit tests with:
+## Testing
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-The test suite checks contextual readings, PyKakasi selection, source
-reconstruction, whitespace and newline preservation, kana normalization, and
-invalid engine handling. Build a wheel with:
-
-```bash
-python3 -m build --wheel
-```
-
-Reading behavior is versioned. Applications should depend on a release tag or
-a bounded package version rather than an unreviewed moving branch.
-
-## Roadmap
-
-- expand reviewed contextual-reading fixtures;
-- add explicit diagnostics for ambiguous or unavailable readings;
-- evaluate optional dictionary evidence without coupling it to the core API;
-- publish stable package releases and compatibility notes;
-- measure accuracy on independently maintained Japanese corpora.
-
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+MIT. This repository builds on open-source foundations (Sudachi, Fugashi,
+PyKakasi, UniDic, Yomitan dictionary format); their licenses remain with the
+respective projects.

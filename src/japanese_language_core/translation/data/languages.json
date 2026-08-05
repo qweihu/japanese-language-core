@@ -1,0 +1,30 @@
+{
+  "registry": {
+    "zh-CN": {
+      "name": "简体中文",
+      "default": true,
+      "kana_warning": true,
+      "conventions": {
+        "script": "简体中文，不使用繁体",
+        "punctuation": "全角标点",
+        "tone": "学习文本平实准确；歌词偏口语化",
+        "proper_nouns": "使用通行译法（東京→东京）；无通行译法时保留日文原文",
+        "kana": "翻译行出现平假名/片假名视为漏译（专名或引用可保留）",
+        "notes": "逐句对应，不合并、不拆分组，不加译注或赏析"
+      }
+    },
+    "en": {
+      "name": "English",
+      "default": false,
+      "kana_warning": true,
+      "conventions": {
+        "script": "Latin script",
+        "punctuation": "natural English punctuation",
+        "tone": "idiomatic; singable for lyrics when requested, otherwise faithful prose",
+        "proper_nouns": "Hepburn romanization; use established English names when they exist",
+        "kana": "kana in a translation line usually means an untranslated fragment",
+        "notes": "one line per source line; preserve blank-line grouping; no footnotes"
+      }
+    }
+  }
+}

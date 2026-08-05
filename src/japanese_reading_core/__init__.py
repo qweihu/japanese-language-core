@@ -1,28 +1,34 @@
-"""Reusable Japanese tokenization and reading adapters.
+"""Compatibility shim: re-export the reading capability of
+``japanese_language_core`` under the former package name.
 
-The package is independent of Bunomi's ruby renderer, language detection,
-dictionary audit, and export policy. Bunomi and Utayomi consume the same
-source-preserving token contract.
+New code should import from ``japanese_language_core.reading``. This shim is
+kept for the transition period and removed once consumers migrate.
 """
 
-from .engine import (
+from japanese_language_core.reading import (
+    Deinflection,
     EngineUnavailableError,
+    PykakasiEngine,
     ReadingEngine,
     ReadingEngineError,
     ReadingToken,
-    PykakasiEngine,
     SudachiEngine,
+    align_reading,
     create_engine,
+    deinflect,
     to_hiragana,
 )
 
 __all__ = [
+    "Deinflection",
     "EngineUnavailableError",
+    "PykakasiEngine",
     "ReadingEngine",
     "ReadingEngineError",
     "ReadingToken",
-    "PykakasiEngine",
     "SudachiEngine",
+    "align_reading",
     "create_engine",
+    "deinflect",
     "to_hiragana",
 ]

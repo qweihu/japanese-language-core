@@ -3,14 +3,25 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "japanese-reading-core"
-version = "0.1.0"
-description = "Shared Japanese tokenization and contextual reading engines for Bunomi and Utayomi"
+name = "japanese-language-core"
+version = "0.2.0"
+description = "Nihongo Core: shared Japanese language capabilities for Bunomi and Utayomi — contextual reading, kana/romaji, deinflection, line-preserving translation contracts, dictionary metadata, grammar patterns, and export contracts."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "qwei" }]
-dependencies = [
+dependencies = []
+
+[project.optional-dependencies]
+reading = [
+  "fugashi>=1.3.0",
+  "unidic-lite>=1.0.8",
+  "pykakasi>=2.2.1",
+  "sudachipy>=0.6.11",
+  "sudachidict-core>=20230110",
+]
+translation = []
+all = [
   "fugashi>=1.3.0",
   "unidic-lite>=1.0.8",
   "pykakasi>=2.2.1",
@@ -23,3 +34,6 @@ where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"
+
+[tool.setuptools.package-data]
+japanese_language_core = ["translation/data/*.json"]
