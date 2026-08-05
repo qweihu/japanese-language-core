@@ -41,6 +41,16 @@ source .venv/bin/activate      # macOS/Linux；Windows: .venv\Scripts\activate
 
 然后在已激活的环境中执行下面的安装命令。
 
+### Python 与 python3 命令兼容
+
+本库需要 Python 3.10+。在 macOS 和多数 Linux 上，裸 `python` 命令可能不存在
+或指向 Python 2，虚拟环境外请使用 `python3`。在已激活的虚拟环境内
+`python` 与 `python3` 都可用；未激活时请显式调用解释器，例如
+`.venv/bin/python -m japanese_language_core ...`。
+
+安装后也可以直接使用 `nihongo` 命令（位于虚拟环境的 `bin` 目录），
+各平台行为一致，不区分 `python`/`python3`。
+
 ```bash
 # 仅读音（Sudachi / Fugashi / PyKakasi）
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"

@@ -25,6 +25,16 @@ source .venv/bin/activate      # Windows: .venv\Scripts\activate
 
 アクティベート後に以下のコマンドを実行します。
 
+### `python` と `python3` の互換
+
+Python 3.10+ が必要です。macOS や多くの Linux では裸の `python` が無いか
+Python 2 を指すことがあるため、仮想環境の外では `python3` を使ってください。
+アクティベート後は `python` / `python3` どちらも使えます。未アクティベート時は
+`.venv/bin/python -m japanese_language_core ...` のように明示します。
+
+インストール後は `nihongo` コマンド（仮想環境の `bin` 内）も利用でき、
+プラットフォームに関わらず同じ挙動です。
+
 ```bash
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
 ```

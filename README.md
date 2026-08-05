@@ -46,6 +46,19 @@ source .venv/bin/activate      # macOS/Linux; Windows: .venv\Scripts\activate
 
 Then run the commands below inside the activated environment.
 
+### Python and the `python3` command
+
+The library requires Python 3.10+. On macOS and many Linux distributions the
+bare `python` command may be missing or point to Python 2, so use `python3`
+outside a virtual environment. Inside an activated virtual environment both
+`python` and `python3` work; when the environment is not activated, call the
+interpreter explicitly, for example
+`.venv/bin/python -m japanese_language_core ...`.
+
+After installation you can also use the `nihongo` console command (installed
+into the environment's `bin` directory); it behaves identically on every
+platform, regardless of `python` vs `python3`.
+
 ```bash
 # reading only (Sudachi / Fugashi / PyKakasi)
 python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"

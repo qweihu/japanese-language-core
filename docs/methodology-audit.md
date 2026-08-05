@@ -256,8 +256,11 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 
 ### P0（必须）
 
-- [ ] 建立读音 golden 基准集（覆盖歧义读音/送假名/长音），跑分纳入 CI；
-- [ ] 建立翻译校验正/负例集（通过/漏译/行数/ruby/占位符）；
+- [x] 建立读音 golden 基准集：公开材料优先（Tatoeba 样本 + SudachiDict 词级
+  读音近似 + 原文保真/覆盖率指标），见 [benchmarks.md](benchmarks.md)；
+  歧义读音/送假名/长音的句级人工基准仍待引入；
+- [x] 建立翻译校验正/负例集：`benchmarks/tatoeba_sample.json`（20 句真实
+  日→中句对）+ `tests/test_benchmark_sample.py`；
 - [ ] 增加歧义 furigana 对齐样例测试并写明已知限制。
 
 ### P1（应该）
@@ -265,6 +268,8 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [x] Agent CLI-first：新增顶层 CLI（reading/validate/translate/languages），
   技能明确优先使用 CLI；
 - [x] 虚拟环境安装引导写入 README（无 venv 时先创建）；
+- [x] python/python3 兼容说明写入 README（三语），脚本 shebang 均为
+  `#!/usr/bin/env python3`，并提供 `nihongo` 入口命令；
 - [x] 活用形补充高频规则（ちゃう/じゃう/とく/てる/てた/たがる/てください/
   たほうがいい/そうです/ことがある 等）；
 - [x] Yomitan meta bank 建索引（去掉线性扫描）；
@@ -273,7 +278,8 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [ ] 翻译 few-shot 示例进 languages.json；
 - [ ] BYO-LLM 重试 + 长文本分批 + max_tokens 可覆盖；
 - [ ] 词典 validate 对齐 Yomitan schema 基本校验；
-- [ ] CI（GitHub Actions matrix）+ pytest-cov 门禁。
+- [x] CI：GitHub Actions matrix 测试 + benchmark 任务（pytest-cov 覆盖率
+  门禁列为 P2）。
 
 ### P2（建议）
 
@@ -283,6 +289,7 @@ Python API 面向"应用集成"（Bunomi/Utayomi 等程序化消费方），技�
 - [ ] 发布到 PyPI（semver + CHANGELOG + 许可证声明）；
 - [ ] 频率/声调格式变体兼容与文档说明；
 - [ ] 占位符位置/数量校验。
+- [ ] pytest + 覆盖率（pytest-cov）迁移与门禁。
 
 ## 6. 参考来源
 
