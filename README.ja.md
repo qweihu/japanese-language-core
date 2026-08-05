@@ -15,6 +15,29 @@ Nihongo Core は Python 向けのプロフェッショナルな日本語処理�
 > `dictionary` / `grammar` / `export` は安定していますが実験的で、
 > 組み込みの消費者はまだ依存していません。必要に応じて使ってください。
 
+## 機能一覧
+
+| モジュール | 名称 | 内容 |
+| --- | --- | --- |
+| `japanese_language_core.reading` | 読み | 原文保持の分かち書き + 文脈付き読み |
+| `japanese_language_core.reading.kana` | かな・ローマ字 | かな変換、全半角正規化、ヘボン式ローマ字 |
+| `japanese_language_core.reading.alignment` | 読み-漢字アライメント | 読みを漢字へ分配（ruby 用） |
+| `japanese_language_core.reading.deinflect` | 活用形復元 | 活用形 → 辞書形 候補 |
+| `japanese_language_core.reading.conjugator` | 活用形生成 | 辞書形 → 活用形生成 |
+| `japanese_language_core.reading.splitter` | 文分割 | 文分割（句点を保持） |
+| `japanese_language_core.reading.mora` | 拍カウント | 拍（モーラ）カウント |
+| `japanese_language_core.translation` | 翻訳 | 行単位契約・検証・言語レジストリ |
+| `japanese_language_core.translation.provider` | 翻訳プロバイダ | Agent モード or BYO-LLM |
+| `japanese_language_core.dictionary` | 辞書 | Yomitan 辞書リーダー + JLPT 分析 |
+| `japanese_language_core.dictionary.jmnedict` | 固有名詞（JMnedict） | 固有名詞の読み・カテゴリ |
+| `japanese_language_core.dictionary.pitch` | アクセント | アクセント位置 → H/L パターン |
+| `japanese_language_core.dictionary.scoring` | 難易度スコア | 可読性 / 難易度スコア |
+| `japanese_language_core.dictionary.kanjivg` | 筆順（KanjiVG） | 筆順・部首リーダー（データ別途） |
+| `japanese_language_core.grammar` | 文法 | 助詞・定型パターン検出 |
+| `japanese_language_core.export` | エクスポート | Anki ノート契約と対訳 Markdown |
+| `japanese_language_core.export.mining` | マイニング | 句 → カード → payload 契約 |
+| `japanese_language_core.sentences` | 例文バンク | Tatoeba 例文バンク（CC BY 2.0） |
+
 ## シナリオナビ
 
 読み・翻訳・活用形は本番、辞書・文法・難易度は実験的、例文バンク

@@ -18,20 +18,26 @@ It is built around two ideas:
 
 ## Feature overview
 
-| Module name | What it provides |
-| --- | --- |
-| [`japanese_language_core.reading`](#reading) | Source-preserving tokenization + contextual readings (`auto` / `sudachi` / `pykakasi`) |
-| [`japanese_language_core.reading.kana`](#kana-and-romaji) | Hiragana/katakana conversion, width normalization, Hepburn romaji |
-| [`japanese_language_core.reading.alignment`](#furigana-alignment) | Distribute readings across kanji for ruby rendering |
-| [`japanese_language_core.reading.deinflect`](#deinflection) | Conjugated form → dictionary-form candidates |
-| [`japanese_language_core.translation`](#translation) | Line-preserving contract, validation, language registry, glossary checks |
-| [`japanese_language_core.translation.provider`](#byo-llm-translation) | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
-| [`japanese_language_core.dictionary`](#dictionary) | Yomitan-format dictionary reader + JLPT difficulty analysis |
-| [`japanese_language_core.dictionary.jmnedict`](#proper-nouns-jmnedict) | Proper-noun lookup (JMnedict): readings and categories |
-| [`japanese_language_core.grammar`](#grammar) | Particle and common grammar-pattern detection |
-| [`japanese_language_core.export`](#export) | Anki note contract and paired Markdown layout |
-| [`japanese_language_core.export.mining`](#mining-pipeline) | Anki mining pipeline contract (sentence → note → payload) |
-| [`japanese_language_core.sentences`](#sentence-bank) | Tatoeba sentence bank reader (CC BY 2.0 data) |
+| Module name | Name | What it provides |
+| --- | --- | --- |
+| [`japanese_language_core.reading`](#reading) | Reading | Source-preserving tokenization + contextual readings (`auto` / `sudachi` / `pykakasi`) |
+| [`japanese_language_core.reading.kana`](#kana-and-romaji) | Kana & Romaji | Hiragana/katakana conversion, width normalization, Hepburn romaji |
+| [`japanese_language_core.reading.alignment`](#furigana-alignment) | Furigana Alignment | Distribute readings across kanji for ruby rendering |
+| [`japanese_language_core.reading.deinflect`](#deinflection) | Deinflection | Conjugated form → dictionary-form candidates |
+| [`japanese_language_core.reading.conjugator`](#deinflection) | Conjugation | Dictionary form → common conjugation forms |
+| [`japanese_language_core.reading.splitter`](#reading) | Sentence Splitter | Sentence splitting (terminators kept attached) |
+| [`japanese_language_core.reading.mora`](#reading) | Mora Counter | Mora (拍) counting |
+| [`japanese_language_core.translation`](#translation) | Translation | Line-preserving contract, validation, language registry, glossary checks |
+| [`japanese_language_core.translation.provider`](#byo-llm-translation) | Translation Providers | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
+| [`japanese_language_core.dictionary`](#dictionary) | Dictionary | Yomitan-format dictionary reader + JLPT difficulty analysis |
+| [`japanese_language_core.dictionary.jmnedict`](#proper-nouns-jmnedict) | Proper Nouns (JMnedict) | Proper-noun lookup: readings and categories |
+| [`japanese_language_core.dictionary.pitch`](#search-pitch-scoring-stroke-order) | Pitch Accent | Accent position → H/L pattern and classification |
+| [`japanese_language_core.dictionary.scoring`](#search-pitch-scoring-stroke-order) | Difficulty Scoring | Readability / difficulty scores |
+| [`japanese_language_core.dictionary.kanjivg`](#search-pitch-scoring-stroke-order) | Stroke Order (KanjiVG) | Stroke-order and radical reader (data self-provided) |
+| [`japanese_language_core.grammar`](#grammar) | Grammar | Particle and common grammar-pattern detection |
+| [`japanese_language_core.export`](#export) | Export | Anki note contract and paired Markdown layout |
+| [`japanese_language_core.export.mining`](#mining-pipeline) | Mining Pipeline | Anki mining pipeline contract (sentence → note → payload) |
+| [`japanese_language_core.sentences`](#sentence-bank) | Sentence Bank | Tatoeba sentence bank reader (CC BY 2.0 data) |
 
 > **Capability maturity.** `reading` and `translation` are the production
 > core. `dictionary`, `grammar`, and `export` are stable but experimental:

@@ -14,20 +14,26 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 
 ## 功能总览
 
-| 模块名称 | 内容 |
-| --- | --- |
-| [`japanese_language_core.reading`](#读音reading) | 保原文分词 + 上下文读音（`auto` / `sudachi` / `pykakasi`） |
-| [`japanese_language_core.reading.kana`](#假名与罗马音) | 假名转换、全半角归一、Hepburn 罗马音 |
-| [`japanese_language_core.reading.alignment`](#读音-汉字对齐) | 读音分配到汉字（ruby 渲染） |
-| [`japanese_language_core.reading.deinflect`](#活用形还原) | 变形 → 辞書形 候选 |
-| [`japanese_language_core.translation`](#翻译translation) | 逐句契约、校验、语言注册表、术语一致性 |
-| [`japanese_language_core.translation.provider`](#byo-llm-翻译) | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
-| [`japanese_language_core.dictionary`](#词典dictionary) | Yomitan 词典读取 + JLPT 难度分析 |
-| [`japanese_language_core.dictionary.jmnedict`](#专名jmnedict) | 专名查询（JMnedict）：读音与类别 |
-| [`japanese_language_core.grammar`](#语法grammar) | 助词与常见语法型检测 |
-| [`japanese_language_core.export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
-| [`japanese_language_core.export.mining`](#闪卡挖掘mining) | Anki 挖句流水线契约（句 → 笔记 → payload） |
-| [`japanese_language_core.sentences`](#例句句库sentences) | Tatoeba 句库读取器（数据 CC BY 2.0） |
+| 模块名称 | 名称 | 内容 |
+| --- | --- | --- |
+| [`japanese_language_core.reading`](#读音reading) | 读音 | 保原文分词 + 上下文读音（`auto` / `sudachi` / `pykakasi`） |
+| [`japanese_language_core.reading.kana`](#假名与罗马音) | 假名与罗马音 | 假名转换、全半角归一、Hepburn 罗马音 |
+| [`japanese_language_core.reading.alignment`](#读音-汉字对齐) | 读音-汉字对齐 | 读音分配到汉字（ruby 渲染） |
+| [`japanese_language_core.reading.deinflect`](#活用形还原) | 活用形还原 | 变形 → 辞書形 候选 |
+| [`japanese_language_core.reading.conjugator`](#活用形还原) | 活用形生成 | 辞書形 → 常用活用形生成 |
+| [`japanese_language_core.reading.splitter`](#读音reading) | 句子分割 | 句子分割（保留句末符号） |
+| [`japanese_language_core.reading.mora`](#读音reading) | 拍计数 | 拍（mora）计数 |
+| [`japanese_language_core.translation`](#翻译translation) | 翻译 | 逐句契约、校验、语言注册表、术语一致性 |
+| [`japanese_language_core.translation.provider`](#byo-llm-翻译) | 翻译执行器 | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
+| [`japanese_language_core.dictionary`](#词典dictionary) | 词典 | Yomitan 词典读取 + JLPT 难度分析 |
+| [`japanese_language_core.dictionary.jmnedict`](#专名jmnedict) | 专名（JMnedict） | 专名查询：读音与类别 |
+| [`japanese_language_core.dictionary.pitch`](#搜索声调难度打分与笔顺) | 声调 | 声调位置 → H/L 升降模式与分类 |
+| [`japanese_language_core.dictionary.scoring`](#搜索声调难度打分与笔顺) | 难度打分 | 可读性 / 难度打分 |
+| [`japanese_language_core.dictionary.kanjivg`](#搜索声调难度打分与笔顺) | 笔顺（KanjiVG） | 笔顺与部首读取器（数据自备） |
+| [`japanese_language_core.grammar`](#语法grammar) | 语法 | 助词与常见语法型检测 |
+| [`japanese_language_core.export`](#导出export) | 导出 | Anki 笔记契约与中日对照 Markdown |
+| [`japanese_language_core.export.mining`](#闪卡挖掘mining) | 挖句流水线 | Anki 挖句流水线契约（句 → 笔记 → payload） |
+| [`japanese_language_core.sentences`](#例句句库sentences) | 例句句库 | Tatoeba 句库读取器（数据 CC BY 2.0） |
 
 > **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
 > `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
