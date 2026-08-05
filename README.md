@@ -35,6 +35,22 @@ It is built around two ideas:
 > their interfaces are tested, yet no bundled consumer depends on them yet —
 > build on them at your own pace.
 
+## Scenarios
+
+Want to know "what can I do with this?" — the scenario map in
+[docs/scenarios.md](docs/scenarios.md) is the navigation hub. Quick lookup:
+
+| Scenario | Module | Status |
+| --- | --- | --- |
+| Reading & furigana | `reading` | Production |
+| Translation | `translation` | Production |
+| Inflection analysis | `reading.deinflect` | Base |
+| Dictionary lookup | `dictionary` | Experimental |
+| Grammar | `grammar` | Experimental |
+| Difficulty estimate | `dictionary.jlpt` | Experimental |
+| Sentence bank | planned | — |
+| Flashcard mining | `export.anki` | Experimental |
+
 ## Install
 
 Python 3.10+.
