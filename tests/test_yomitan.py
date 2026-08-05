@@ -99,6 +99,48 @@ class YomitanDictionaryTests(unittest.TestCase):
             [2, 3], [accent.position for accent in term.pitch_accents]
         )
 
+    def test_furigana_extension_and_search(self):
+        path = "/private/tmp/fixture-furigana-yomitan.zip"
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr(
+                "index.json",
+                json.dumps({"title": "Furigana Test", "format_version": 3}),
+            )
+            archive.writestr(
+                "term_bank_1.json",
+                json.dumps(
+                    [
+                        [
+                            "日本語",
+                            "にほんご",
+                            [],
+                            [],
+                            0,
+                            ["Japanese language"],
+                            1,
+                            [],
+                            {"日": "に", "本": "ほん", "語": "ご"},
+                        ],
+                        ["日本", "にほん", [], [], 0, ["Japan"], 2, []],
+                    ]
+                ),
+            )
+        dictionary = YomitanDictionary(path)
+        term = dictionary.lookup_terms("日本語")[0]
+        self.assertEqual({"日": "に", "本": "ほん", "語": "ご"}, term.furigana)
+        self.assertEqual(
+            ["日本", "日本語"],
+            [entry.expression for entry in dictionary.search("日本", "prefix")],
+        )
+        self.assertEqual(
+            ["日本", "日本語"],
+            [entry.expression for entry in dictionary.search("本", "substring")],
+        )
+        self.assertEqual(
+            ["日本", "日本語"],
+            [entry.expression for entry in dictionary.search("日本*", "wildcard")],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,9 +9,11 @@ pitch accent, etc.).
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import re
 import zipfile
 
 from .model import FrequencyTag, KanjiEntry, PitchAccent, TagEntry, TermEntry
@@ -64,6 +66,7 @@ class YomitanDictionary:
         self._kanji_freq = self._build_kanji_freq()
         self._term_index = self._build_term_index()
         self._kanji_index = self._build_kanji_index()
+        self._sorted_expressions = sorted(self._term_index)
 
     @staticmethod
     def _read_index(archive: zipfile.ZipFile) -> DictionaryIndex:
@@ -180,6 +183,11 @@ class YomitanDictionary:
             definitions = self._glossary_text(row[5]) if len(row) > 5 else []
             sequence = int(row[6]) if len(row) > 6 and row[6] is not None else None
             term_tags = list(row[7]) if len(row) > 7 and isinstance(row[7], list) else []
+            furigana = (
+                {str(key): str(value) for key, value in row[8].items()}
+                if len(row) > 8 and isinstance(row[8], dict)
+                else None
+            )
             frequency, accents = self._term_meta(expression)
             entry = TermEntry(
                 expression=expression,
@@ -191,6 +199,7 @@ class YomitanDictionary:
                 sequence=sequence,
                 frequency=frequency,
                 pitch_accents=accents,
+                furigana=furigana,
             )
             index.setdefault(expression, []).append(entry)
         return index
@@ -226,6 +235,40 @@ class YomitanDictionary:
 
     def lookup_terms(self, expression: str) -> list[TermEntry]:
         return list(self._term_index.get(expression, []))
+
+    def search(
+        self, expression: str, mode: str = "prefix"
+    ) -> list[TermEntry]:
+        """Search expressions by ``prefix``, ``substring``, or ``wildcard``."""
+
+        if mode == "prefix":
+            results: list[TermEntry] = []
+            start = bisect_left(self._sorted_expressions, expression)
+            for key in self._sorted_expressions[start:]:
+                if not key.startswith(expression):
+                    break
+                results.extend(self._term_index[key])
+            return results
+        if mode == "substring":
+            return [
+                entry
+                for key in self._sorted_expressions
+                if expression in key
+                for entry in self._term_index[key]
+            ]
+        if mode == "wildcard":
+            regex = re.compile(
+                "^"
+                + re.escape(expression).replace(r"\*", ".*").replace(r"\?", ".")
+                + "$"
+            )
+            return [
+                entry
+                for key in self._sorted_expressions
+                if regex.match(key)
+                for entry in self._term_index[key]
+            ]
+        raise ValueError("mode must be 'prefix', 'substring', or 'wildcard'")
 
     def lookup_kanji(self, character: str) -> list[KanjiEntry]:
         return list(self._kanji_index.get(character, []))

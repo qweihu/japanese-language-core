@@ -24,6 +24,9 @@ class ReadingToken:
     orig: str
     hira: str = ""
     hepburn: str = ""
+    part_of_speech: str = ""
+    dictionary_form: str = ""
+    normalized_form: str = ""
 
 
 class ReadingEngine(Protocol):
@@ -125,6 +128,14 @@ class SudachiEngine:
             for item in self._kakasi.convert(to_hiragana(reading))
         )
 
+    @staticmethod
+    def _safe_attr(match, method: str) -> str:
+        try:
+            value = getattr(match, method)()
+            return str(value) if value else ""
+        except Exception:  # pragma: no cover - dictionary-dependent API
+            return ""
+
     def tokens(self, text: str) -> Iterable[ReadingToken]:
         for line in text.splitlines(keepends=True):
             newline = ""
@@ -146,7 +157,14 @@ class SudachiEngine:
                     for match in matches:
                         surface = match.surface()
                         reading = to_hiragana(match.reading_form() or surface)
-                        yield ReadingToken(surface, reading, self._romaji(reading))
+                        yield ReadingToken(
+                            surface,
+                            reading,
+                            self._romaji(reading),
+                            part_of_speech="/".join(match.part_of_speech()),
+                            dictionary_form=self._safe_attr(match, "dictionary_form"),
+                            normalized_form=self._safe_attr(match, "normalized_form"),
+                        )
             if newline:
                 yield ReadingToken(newline)
 

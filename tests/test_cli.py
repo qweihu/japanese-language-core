@@ -18,6 +18,7 @@ class CliTests(unittest.TestCase):
         payloads = [json.loads(line) for line in buffer.getvalue().strip().splitlines()]
         self.assertEqual("日本語", "".join(item["orig"] for item in payloads))
         self.assertTrue(any(item["hira"] for item in payloads))
+        self.assertIn("part_of_speech", payloads[0])
 
     def test_validate_ok(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -29,7 +29,14 @@ def _reading(args: argparse.Namespace) -> int:
     for token in engine.tokens(text):
         print(
             json.dumps(
-                {"orig": token.orig, "hira": token.hira, "hepburn": token.hepburn},
+                {
+                    "orig": token.orig,
+                    "hira": token.hira,
+                    "hepburn": token.hepburn,
+                    "part_of_speech": token.part_of_speech,
+                    "dictionary_form": token.dictionary_form,
+                    "normalized_form": token.normalized_form,
+                },
                 ensure_ascii=False,
             )
         )

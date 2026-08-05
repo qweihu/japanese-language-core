@@ -35,6 +35,7 @@ class TermEntry:
     sequence: int | None = None
     frequency: FrequencyTag | None = None
     pitch_accents: list[PitchAccent] = field(default_factory=list)
+    furigana: dict[str, str] | None = None
 
 
 @dataclass

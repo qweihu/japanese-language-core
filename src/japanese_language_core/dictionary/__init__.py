@@ -10,16 +10,27 @@ from .model import (
 )
 from .yomitan import YomitanDictionary
 from .jlpt import DifficultyProfile, analyze_difficulty, level_from_tags
+from .pitch import classify, pattern
+from .scoring import difficulty_label, mean_frequency_rank, readability
+from .kanjivg import KanjiVGEntry, KanjiVGReader, parse_svg
 
 __all__ = [
     "DictionaryLookup",
     "DifficultyProfile",
     "FrequencyTag",
+    "KanjiVGEntry",
+    "KanjiVGReader",
     "KanjiEntry",
     "PitchAccent",
     "TagEntry",
     "TermEntry",
     "YomitanDictionary",
     "analyze_difficulty",
+    "classify",
+    "difficulty_label",
     "level_from_tags",
+    "mean_frequency_rank",
+    "parse_svg",
+    "pattern",
+    "readability",
 ]

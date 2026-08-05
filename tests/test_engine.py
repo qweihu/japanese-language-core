@@ -35,6 +35,12 @@ class ReadingEngineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             create_engine("unknown")
 
+    def test_token_carries_morphological_metadata(self):
+        tokens = tuple(create_engine("sudachi").tokens("雨が降り止む"))
+        token = next(item for item in tokens if item.orig == "降り止む")
+        self.assertTrue(token.part_of_speech)
+        self.assertEqual("降り止む", token.dictionary_form)
+
     def test_katakana_normalization(self):
         self.assertEqual("にほんご", to_hiragana("ニホンゴ"))
 

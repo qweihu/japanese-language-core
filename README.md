@@ -29,6 +29,7 @@ It is built around two ideas:
 | [`japanese_language_core.dictionary`](#dictionary) | Yomitan-format dictionary reader + JLPT difficulty analysis |
 | [`japanese_language_core.grammar`](#grammar) | Particle and common grammar-pattern detection |
 | [`japanese_language_core.export`](#export) | Anki note contract and paired Markdown layout |
+| [`japanese_language_core.sentences`](#sentence-bank) | Tatoeba sentence bank reader (CC BY 2.0 data) |
 
 > **Capability maturity.** `reading` and `translation` are the production
 > core. `dictionary`, `grammar`, and `export` are stable but experimental:
@@ -44,11 +45,11 @@ Want to know "what can I do with this?" — the scenario map in
 | --- | --- | --- |
 | Reading & furigana | `reading` | Production |
 | Translation | `translation` | Production |
-| Inflection analysis | `reading.deinflect` | Base |
-| Dictionary lookup | `dictionary` | Experimental |
+| Inflection analysis | `reading.deinflect` + `reading.conjugator` | Production |
+| Dictionary lookup | `dictionary` (+ search) | Experimental |
 | Grammar | `grammar` | Experimental |
-| Difficulty estimate | `dictionary.jlpt` | Experimental |
-| Sentence bank | planned | — |
+| Difficulty estimate | `dictionary.jlpt` + `dictionary.scoring` | Experimental |
+| Sentence bank | `sentences` | New |
 | Flashcard mining | `export.anki` | Experimental |
 
 ## Install
@@ -183,6 +184,15 @@ from japanese_language_core.reading import ReadingToken
 token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
 ```
 
+With the Sudachi engine each token also carries morphological metadata
+(empty on the PyKakasi path):
+
+| Field | Meaning |
+| --- | --- |
+| `part_of_speech` | Slash-joined POS tags (e.g. `名詞/普通名詞/一般`) |
+| `dictionary_form` | Dictionary form (辞書形) |
+| `normalized_form` | Sudachi normalized form (standard form) |
+
 ### Engine modes
 
 | Mode | Behavior | Best for |
@@ -248,8 +258,9 @@ dictionary-level alignment, which the `dictionary` capability can supply;
 this function is the deterministic fallback. Its greedy choice is a valid but
 not necessarily dictionary-identical distribution (e.g. 好き嫌い → 好=す,
 き=き, 嫌=きら); use dictionary-embedded furigana data when you need
-community identical alignment. Known limitation documented in
-docs/methodology-audit.md.
+community identical alignment (the reader supports a per-kanji `furigana`
+extension field when a dictionary provides it). Known limitation documented
+in docs/scenarios.md.
 
 ## Deinflection
 

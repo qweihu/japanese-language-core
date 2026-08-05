@@ -20,8 +20,11 @@ from .kana import (
     to_katakana,
     to_romaji,
 )
-from .alignment import align_reading
+from .alignment import align_reading, align_with_furigana
+from .conjugator import conjugate
 from .deinflect import Deinflection, deinflect
+from .mora import count_mora, mora_segments
+from .splitter import split_sentences
 
 __all__ = [
     "Deinflection",
@@ -32,13 +35,18 @@ __all__ = [
     "ReadingToken",
     "SudachiEngine",
     "align_reading",
+    "align_with_furigana",
+    "conjugate",
+    "count_mora",
     "create_engine",
     "deinflect",
     "is_hiragana",
     "is_kanji",
     "is_kana",
     "is_katakana",
+    "mora_segments",
     "normalize_width",
+    "split_sentences",
     "to_hiragana",
     "to_katakana",
     "to_romaji",

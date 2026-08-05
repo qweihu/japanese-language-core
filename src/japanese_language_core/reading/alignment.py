@@ -12,7 +12,7 @@ def align_reading(term: str, reading: str) -> list[tuple[str, str]]:
     kana until the next kana of the term (or the end of the reading). This is
     the same distribution problem Yomitan handles with dictionary hints, so
     ambiguous compounds (e.g. 好き嫌い) may need dictionary-level alignment;
-    this function is the deterministic fallback for ruby rendering.
+    this function is the deterministic fallback.
     """
 
     term_hira = to_hiragana(term)
@@ -48,4 +48,37 @@ def align_reading(term: str, reading: str) -> list[tuple[str, str]]:
                 break
             reading_index += 1
         pairs.append(("".join(surface), reading_hira[start:reading_index]))
+    return pairs
+
+
+def align_with_furigana(
+    term: str, reading: str, furigana: dict[str, str] | None
+) -> list[tuple[str, str]]:
+    """Dictionary-first alignment when per-kanji readings are available.
+
+    ``furigana`` maps each kanji to its reading in this term (the extension
+    field some dictionaries provide; most Yomitan v3 term banks do not).
+    Falls back to ``align_reading`` when the map cannot cover the reading.
+    """
+
+    if not furigana:
+        return align_reading(term, reading)
+    pairs: list[tuple[str, str]] = []
+    index = 0
+    for char in term:
+        if is_kana(char):
+            if index < len(reading) and reading[index] == char:
+                pairs.append((char, char))
+                index += 1
+            else:
+                return align_reading(term, reading)
+            continue
+        expected = furigana.get(char, "")
+        if expected and reading.startswith(expected, index):
+            pairs.append((char, expected))
+            index += len(expected)
+        else:
+            return align_reading(term, reading)
+    if index != len(reading):
+        return align_reading(term, reading)
     return pairs

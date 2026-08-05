@@ -25,6 +25,7 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 | [`japanese_language_core.dictionary`](#词典dictionary) | Yomitan 词典读取 + JLPT 难度分析 |
 | [`japanese_language_core.grammar`](#语法grammar) | 助词与常见语法型检测 |
 | [`japanese_language_core.export`](#导出export) | Anki 笔记契约与中日对照 Markdown |
+| [`japanese_language_core.sentences`](#例句句库sentences) | Tatoeba 句库读取器（数据 CC BY 2.0） |
 
 > **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
 > `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
@@ -39,11 +40,11 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 | --- | --- | --- |
 | 阅读与注音 | `reading` | 生产 |
 | 翻译 | `translation` | 生产 |
-| 活用形分析 | `reading.deinflect` | 基础 |
-| 词典查询 | `dictionary` | 实验 |
+| 活用形分析 | `reading.deinflect` + `reading.conjugator` | 生产 |
+| 词典查询 | `dictionary`（含搜索） | 实验 |
 | 语法 | `grammar` | 实验 |
-| 难度评估 | `dictionary.jlpt` | 实验 |
-| 例句句库 | 规划中 | — |
+| 难度评估 | `dictionary.jlpt` + `dictionary.scoring` | 实验 |
+| 例句句库 | `sentences` | 新增 |
 | 闪卡挖掘 | `export.anki` | 实验 |
 
 ## 安装
@@ -173,6 +174,14 @@ from japanese_language_core.reading import ReadingToken
 token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
 ```
 
+Sudachi 引擎下每个 token 还携带形态学元数据（PyKakasi 路径下为空）：
+
+| 字段 | 含义 |
+| --- | --- |
+| `part_of_speech` | 斜杠分隔的词性标签（如 `名詞/普通名詞/一般`） |
+| `dictionary_form` | 辞書形 |
+| `normalized_form` | Sudachi 标准形 |
+
 ### 引擎模式
 
 | 模式 | 行为 | 适用 |
@@ -234,7 +243,8 @@ print(align_reading("日本語", "にほんご"))
 歧义复合词（好き嫌い）可能需要词典级对齐，`dictionary` 能力可提供线索；
 该函数是确定性回退。贪心选择是合法但未必与社区词典一致的分布
 （如 好き嫌い → 好=す、き=き、嫌=きら）；需要与词典一致时请使用带读音
-分布的词典数据。已知限制见 docs/methodology-audit.md。
+分布的词典数据（读取器支持词条内 `furigana` 扩展字段）。已知限制见
+docs/scenarios.md。
 
 ## 活用形还原
 

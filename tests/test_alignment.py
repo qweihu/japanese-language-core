@@ -31,6 +31,20 @@ class AlignmentTests(unittest.TestCase):
         self.assertEqual("おねがいいたします", "".join(s for s, _ in pairs))
         self.assertEqual("おねがいいたします", "".join(r for _, r in pairs))
 
+    def test_align_with_furigana(self):
+        from japanese_language_core.reading import align_with_furigana
+
+        pairs = align_with_furigana(
+            "日本語", "にほんご", {"日": "に", "本": "ほん", "語": "ご"}
+        )
+        self.assertEqual([("日", "に"), ("本", "ほん"), ("語", "ご")], pairs)
+
+    def test_align_with_furigana_falls_back(self):
+        from japanese_language_core.reading import align_with_furigana
+
+        pairs = align_with_furigana("日本語", "にほんご", {"日": "にち"})
+        self.assertEqual(align_reading("日本語", "にほんご"), pairs)
+
 
 if __name__ == "__main__":
     unittest.main()

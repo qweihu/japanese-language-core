@@ -15,19 +15,19 @@
 | --- | --- | --- | --- | --- |
 | 阅读与注音（furigana/ruby） | `reading` + `reading.alignment` | ✅ 生产 | Yomitan/Jitendex 词典内读音分布；japanese-furigana-normalize | P1 词典内分布接入（需先评估数据可用性） |
 | 假名/罗马音转换 | `reading.kana` | ✅ 生产 | pykakasi；kusanaji（Node） | 保持 |
-| 词形分析（活用形） | `reading.deinflect` | ✅ 基础 | Yomitan MultiLanguageTransformer；jamdict | P0 补充"辞書形 → 活用形"生成（conjugator） |
-| 词典查询（词条/汉字） | `dictionary` | 🟡 实验 | jamdict；Yomitan 词典生态；jisho | P1 通配符/前缀搜索 |
-| 专名读音 | `dictionary`（Yomitan/JMnedict bank） | 🟡 部分 | JMnedict；Yomitan | P2 专名模块与上下文消歧 |
-| 语法分析 | `grammar` | 🟡 实验 | GiNZA/spaCy（PoS + 依存）；BunPro | P0 在 `ReadingToken` 暴露 PoS/辞書形元数据；依存句法交给 GiNZA，不进 core |
+| 词形分析（活用形） | `reading.deinflect` + `reading.conjugator` | ✅ 生产 | Yomitan MultiLanguageTransformer；jamdict | 双向（还原 + 生成）已实现 |
+| 词典查询（词条/汉字） | `dictionary` | 🟡 实验 | jamdict；Yomitan 词典生态；jisho | 搜索已实现（prefix/substring/wildcard） |
+| 专名读音 | `dictionary`（Yomitan/JMnedict bank） | 🟡 部分 | JMnedict；Yomitan | P1（用户确认必做）：专名模块与上下文消歧 |
+| 语法分析 | `grammar` | 🟡 实验 | GiNZA/spaCy（PoS + 依存）；BunPro | `ReadingToken` 已暴露 PoS/辞書形/标准形；依存句法交给 GiNZA，不进 core |
 | 翻译 | `translation` | ✅ 生产 | LLM 管线 + COMET/BLEU 评测 | 押后 LLM-as-judge（外部评测工具） |
-| 难度评估 | `dictionary.jlpt` | 🟡 实验 | JPDB/BCCWJ 频度；tanos JLPT（CC BY） | P1 频度 + 可读性打分 |
-| 声调（pitch accent） | `dictionary`（meta bank） | 🟡 实验 | Kanjium/Wadoku；Yomitan meta；PitchAccent add-on | P1 声调渲染与分析（位置 → 升降模式） |
-| 例句/句库 | — | ❌ | Tatoeba API/导出；tatoebatools | P0 Tatoeba 句库读取器（复用基准集数据流） |
-| 闪卡挖掘（SRS） | `export.anki` | 🟡 实验 | jp-mining-note；Yomichan + AnkiConnect | P2 mining 流水线契约（句→卡→Anki） |
-| 文本统计与归一化 | `reading.kana` + `structure` | ✅ 部分 | NFKC；MeCab 统计 | P0 句子分割 + 拍（mora）计数 |
-| 语音/音频 | — | ❌ | Onsei；OpenJTalk；Voicevox；Forvo | P2 音频提供方契约（不合成） |
-| 汉字信息（部首/笔顺） | `dictionary.kanji` | 🟡 实验 | KanjiVG；WaniKani；kanjiapi | P2 部首/笔顺读取器 |
-| OCR/漫画阅读 | — | ❌（外部） | manga-ocr；mokuro | 外部集成适配，不进 core |
+| 难度评估 | `dictionary.jlpt` + `dictionary.scoring` | 🟡 实验 | JPDB/BCCWJ 频度；tanos JLPT（CC BY） | 可读性打分已实现（readability/difficulty_label） |
+| 声调（pitch accent） | `dictionary`（meta bank）+ `dictionary.pitch` | 🟡 实验 | Kanjium/Wadoku；Yomitan meta；PitchAccent add-on | pattern/classify 已实现（位置 → 升降模式） |
+| 例句/句库 | `sentences` | ✅ 新增 | Tatoeba API/导出；tatoebatools | Tatoeba 句库读取器已实现（复用基准集数据流） |
+| 闪卡挖掘（SRS） | `export.anki` | 🟡 实验 | jp-mining-note；Yomichan + AnkiConnect | P1（用户确认必做）：mining 流水线契约（句→卡→Anki） |
+| 文本统计与归一化 | `reading.kana` + `structure` + `reading.splitter`/`reading.mora` | ✅ 部分 | NFKC；MeCab 统计 | 句子分割与拍计数已实现 |
+| 语音/音频 | — | ❌ | Onsei；OpenJTalk；Voicevox；Forvo | 再往后（P3）：音频提供方契约（不合成） |
+| 汉字信息（部首/笔顺） | `dictionary.kanjivg` | 🟡 新增 | KanjiVG；WaniKani；kanjiapi | KanjiVG 读取器已实现（数据自备，CC BY-SA） |
+| OCR/漫画阅读 | — | ❌（外部） | manga-ocr；mokuro | 再往后（P3）：外部集成适配，不进 core |
 
 ## 与热门项目功能矩阵
 
@@ -50,27 +50,31 @@
 
 ### P0（成本低、解锁其他能力，建议先做）
 
-- `ReadingToken` 扩展元数据：`part_of_speech`、`dictionary_form`（辞書形）、
-  `normalized_form`（Sudachi 标准形）。Sudachi 已提供这些字段，成本低，
-  能直接升级活用形过滤、语法标注与难度分析；
-- `reading.conjugator`：从辞書形生成常用活用形（ます/ない/て/た/ば/意向/
-  命令），与 deinflect 形成闭环；
-- `reading.splitter` + `reading.mora`：句子分割（。」！？）与拍计数，
-  服务于歌词、闪卡与声调；
-- `sentences`：Tatoeba 句库读取器（复用基准集数据流与 CC BY 2.0 声明）。
+- [x] `ReadingToken` 扩展元数据：`part_of_speech`、`dictionary_form`、
+  `normalized_form`（Sudachi 已提供，成本低，解锁活用形过滤/语法/难度）；
+- [x] `reading.conjugator`：辞書形 → 常用活用形生成，与 deinflect 闭环；
+- [x] `reading.splitter` + `reading.mora`：句子分割与拍计数；
+- [x] `sentences`：Tatoeba 句库读取器（复用基准集数据流与 CC BY 2.0 声明）。
 
 ### P1（值得做）
 
-- 词典通配符/前缀搜索（Yomitan 同款）；
-- 声调渲染：position → 升降模式（平板/头高/中高/尾高）；
-- 难度打分：频率 + JLPT + 可读性公式；
-- 词典内 furigana 分布接入（先评估公开词典数据可用性）；
-- KanjiVG 笔顺/部首读取器。
+- [x] 词典通配符/前缀/子串搜索（Yomitan 同款）；
+- [x] 声调渲染：position → 升降模式（`pattern`/`classify`）；
+- [x] 难度打分：可读性公式 + 频率均值（`readability`/`mean_frequency_rank`）；
+- [x] 词典内 furigana 分布接入：词条 `furigana` 扩展字段 + `align_with_furigana`
+  （先评估数据可用性——标准 Yomitan v3 大多不带，作为扩展支持）；
+- [x] KanjiVG 笔顺/部首读取器（数据自备）；
+- [ ] JMnedict 专名读音模块（用户确认必做，进行中）；
+- [ ] Anki mining 流水线契约：句 → 卡 → AnkiConnect payload（用户确认必做）。
 
 ### P2（有消费方再做）
 
-- JMnedict 专名读音模块；
-- Anki mining 流水线契约（句 → 卡 → AnkiConnect payload）；
+- 例句检索增强（按词形/声调过滤）；
+- 难度评估接入真实频度数据（JPDB 许可待评估）；
+- 词典 schema 全量校验（对齐 Yomitan 官方 JSON schema）。
+
+### P3 / 之后再评估
+
 - 音频提供方契约（Forvo/Onsei/OpenJTalk 适配点，不合成音频）；
 - OCR 集成适配（manga-ocr/mokuro 的输出契约）。
 
