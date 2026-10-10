@@ -2,7 +2,6 @@
   "registry": {
     "zh-CN": {
       "name": "简体中文",
-      "default": true,
       "kana_warning": true,
       "conventions": {
         "script": "简体中文，不使用繁体",
@@ -20,7 +19,6 @@
     },
     "en": {
       "name": "English",
-      "default": false,
       "kana_warning": true,
       "conventions": {
         "script": "Latin script",
