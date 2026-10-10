@@ -1,11 +1,11 @@
 ---
 name: japanese-translation
-description: 共享日语翻译能力：把带或不带 ruby 注音的日语文本逐句翻译成目标语言，保持换行、空行分组、ruby 标注、标题与占位符，并支持多语言扩展。Use when a user asks to translate Japanese text, add a translation to Japanese learning material or lyrics, or when Bunomi/Utayomi need a line-preserving translation step. 默认简体中文，其他目标语言见 references/languages.md。
+description: 共享的逐行日语翻译与结构校验能力：把带或不带 ruby 注音的日语文本翻译成调用方选择的目标语言，保持换行、空行分组、ruby 标注、标题与占位符。Use when a user asks to translate Japanese text, add translations to Japanese material, or needs line-preserving translation validation. 目标语言跟随用户明确要求和当前对话语境，不固定为中文或英文。
 ---
 
 # Japanese Translation（共享翻译能力）
 
-供 Bunomi、Utayomi 等日语类技能复用。翻译的输入/输出契约、语言约定和结构校验
+供任何日语应用、Skill 或 Python 项目复用。翻译的输入/输出契约、语言约定和结构校验
 统一由 `japanese-language-core` 的 `translation` 模块提供，调用方只负责自己的排版。
 
 ## Agent 调用方式（CLI-first）
@@ -14,7 +14,7 @@ description: 共享日语翻译能力：把带或不带 ruby 注音的日语文�
 
 ```bash
 python3 -m japanese_language_core validate --source source.txt --translation translation.txt --paired
-python3 -m japanese_language_core translate --source source.txt --base-url <BASE_URL> --model <MODEL>
+python3 -m japanese_language_core translate --source source.txt --target-lang <LANG> --base-url <BASE_URL> --model <MODEL>
 python3 -m japanese_language_core languages
 ```
 
@@ -32,17 +32,18 @@ python3 -m japanese_language_core languages
 
   ```bash
   python3 -m japanese_language_core translate \
-    --source source.txt --base-url <BASE_URL> --model <MODEL>
+    --source source.txt --target-lang <LANG> --base-url <BASE_URL> --model <MODEL>
   ```
 
 core 不内置供应商、不打包密钥。
 
 ## 目标语言选择
 
-1. 默认目标语言为简体中文（zh-CN）。
-2. 翻译前先读 [references/languages.md](references/languages.md) 确认目标语言已注册。
-3. 只翻译已注册的语言；未注册的语言先按“多语言扩展”流程添加，或明确告知用户当前不支持。
-4. 用户未指定目标语言时，根据用户交流语言和文本用途判断；仍不确定时先询问，不要臆测。
+1. 用户明确指定目标语言时，使用该语言。
+2. 用户没有明确指定时，根据当前指令语言和对话语境选择；日语原文的语言不决定译文语言。
+3. 翻译前先读 [references/languages.md](references/languages.md) 确认目标语言已注册。
+4. 只翻译已注册的语言；未注册的语言先按“多语言扩展”流程添加，或明确告知用户当前不支持。
+5. 无法判断目标语言时先询问，不要擅自固定为中文或英文。
 
 ## 输入与输出契约
 
@@ -84,5 +85,5 @@ core 不内置供应商、不打包密钥。
 
 - 不访问网络、不抓取外部翻译，只翻译用户提供或调用方传入的文本（BYO-LLM 仅调用
   用户显式配置的端点）。
-- 不代替 Bunomi 注音，不处理 Utayomi 的歌词清洗、标题识别和歌词排版。
+- 不代替 Bunomi / Utayomi 的注音、歌词清洗、标题识别和 HTML 排版。
 - 专名和外来词按语言参考处理；歧义时保留原文并在对话中说明，不要臆造。
