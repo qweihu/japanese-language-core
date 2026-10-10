@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "dataset_id": "reading-candidates-v1",
+  "source": "Project-authored synthetic examples",
+  "license": "CC0-1.0",
+  "review_status": "pending_review",
+  "cases": [
+    {
+      "id": "okurigana-001",
+      "domain": "ordinary-okurigana",
+      "text": "食べる。",
+      "reference_reading": "たべる。",
+      "reference_ruby_spans": [{"start": 0, "end": 1, "reading": "た"}],
+      "review_status": "pending_review"
+    },
+    {
+      "id": "compound-001",
+      "domain": "ordinary-compound",
+      "text": "日本語を読む。",
+      "reference_reading": "にほんごをよむ。",
+      "reference_ruby_spans": [
+        {"start": 0, "end": 3, "reading": "にほんご"},
+        {"start": 4, "end": 5, "reading": "よ"}
+      ],
+      "review_status": "pending_review"
+    },
+    {
+      "id": "repeated-okurigana-001",
+      "domain": "ordinary-okurigana",
+      "text": "歌う。",
+      "reference_reading": "うたう。",
+      "reference_ruby_spans": [{"start": 0, "end": 1, "reading": "うた"}],
+      "review_status": "pending_review"
+    },
+    {
+      "id": "contextual-reading-001",
+      "domain": "ordinary-context",
+      "text": "今日は晴れる。",
+      "reference_reading": "きょうははれる。",
+      "reference_ruby_spans": [
+        {"start": 0, "end": 2, "reading": "きょう"},
+        {"start": 3, "end": 4, "reading": "は"}
+      ],
+      "review_status": "pending_review"
+    },
+    {
+      "id": "mixed-kanji-001",
+      "domain": "ordinary-context",
+      "text": "明日は雨が降る。",
+      "reference_readings": ["あしたはあめがふる。", "あすはあめがふる。"],
+      "review_status": "pending_review"
+    }
+  ]
+}

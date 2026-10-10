@@ -15,7 +15,11 @@ import argparse
 import json
 from pathlib import Path
 
-from japanese_language_core.reading import create_engine, is_kanji
+from japanese_language_core.reading import (
+    create_engine,
+    is_kanji,
+    runtime_metadata,
+)
 from japanese_language_core.translation import validate_translation
 
 
@@ -32,6 +36,11 @@ def main(argv: list[str] | None = None) -> int:
     data = json.loads(SAMPLE.read_text(encoding="utf-8"))
     pairs = data["pairs"]
     engine = create_engine(args.engine)
+    metadata = runtime_metadata(engine)
+    engine_name = metadata["engine"]
+    python_version = metadata["python"]
+    packages = json.dumps(metadata["packages"], ensure_ascii=False, sort_keys=True)
+    print(f"engine={engine_name} python={python_version} packages={packages}")
     failures: list[str] = []
 
     total_kanji = 0
