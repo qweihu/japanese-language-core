@@ -27,7 +27,8 @@ class ProviderTests(unittest.TestCase):
             transport=fake_transport,
         )
         result = translator.translate(
-            [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")]
+            [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")],
+            target_lang="zh-CN",
         )
         self.assertTrue(result.ok)
         self.assertEqual("https://example.test/v1/chat/completions", fake_transport.last_url)
@@ -44,7 +45,10 @@ class ProviderTests(unittest.TestCase):
             transport=short_transport,
         )
         with self.assertRaises(TranslateError):
-            translator.translate([TranslationUnit("一行"), TranslationUnit("两行")])
+            translator.translate(
+                [TranslationUnit("一行"), TranslationUnit("两行")],
+                target_lang="zh-CN",
+            )
 
     def test_unregistered_language_raises(self):
         translator = OpenAICompatibleTranslator(
@@ -71,7 +75,10 @@ class ProviderTests(unittest.TestCase):
             retry_backoff=0,
             transport=flaky_transport,
         )
-        result = translator.translate([TranslationUnit("明日は晴れる。")])
+        result = translator.translate(
+            [TranslationUnit("明日は晴れる。")],
+            target_lang="zh-CN",
+        )
         self.assertTrue(result.ok)
         self.assertEqual(3, calls["count"])
 
@@ -100,7 +107,8 @@ class ProviderTests(unittest.TestCase):
             transport=chunk_transport,
         )
         result = translator.translate(
-            [TranslationUnit(line) for line in source_lines]
+            [TranslationUnit(line) for line in source_lines],
+            target_lang="en",
         )
         self.assertTrue(result.ok)
         self.assertEqual(2, calls["count"])

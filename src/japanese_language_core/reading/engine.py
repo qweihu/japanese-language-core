@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import platform
 import re
+from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError, version
 from typing import Iterable, Protocol
 
-from .kana import to_hiragana
+from .kana import to_hiragana, to_romaji
 
 
 class ReadingEngineError(RuntimeError):
@@ -32,8 +34,33 @@ class ReadingToken:
 class ReadingEngine(Protocol):
     """Minimal contract that an application must consume."""
 
+    name: str
+
     def tokens(self, text: str) -> Iterable[ReadingToken]:
         """Yield tokens whose ``orig`` fields concatenate to ``text``."""
+
+
+_ENGINE_DISTRIBUTIONS = {
+    "sudachi": ("SudachiPy", "SudachiDict-core"),
+    "pykakasi": ("fugashi", "unidic-lite", "PyKakasi"),
+}
+
+
+def runtime_metadata(engine: ReadingEngine) -> dict[str, object]:
+    """Return the active engine and discoverable runtime package versions."""
+
+    packages: dict[str, str | None] = {}
+    for distribution in _ENGINE_DISTRIBUTIONS.get(engine.name, ()):
+        try:
+            packages[distribution] = version(distribution)
+        except PackageNotFoundError:
+            packages[distribution] = None
+
+    return {
+        "engine": engine.name,
+        "python": platform.python_version(),
+        "packages": packages,
+    }
 
 
 class PykakasiEngine:
@@ -47,7 +74,7 @@ class PykakasiEngine:
             import pykakasi  # type: ignore[import-not-found]
         except ImportError as exc:
             raise EngineUnavailableError(
-                "缺少日语注音依赖，请安装 japanese-language-core[reading]"
+                "缺少 PyKakasi 对照引擎依赖，请安装 japanese-language-core[pykakasi]"
             ) from exc
 
         try:
@@ -104,7 +131,6 @@ class SudachiEngine:
     def __init__(self) -> None:
         try:
             from sudachipy import dictionary, tokenizer  # type: ignore[import-not-found]
-            import pykakasi  # type: ignore[import-not-found]
         except ImportError as exc:
             raise EngineUnavailableError(
                 "缺少 Sudachi 上下文引擎，请安装 japanese-language-core[reading]"
@@ -112,21 +138,13 @@ class SudachiEngine:
         try:
             self._tokenizer = dictionary.Dictionary().create()
             self._split_mode = tokenizer.Tokenizer.SplitMode.C
-            self._kakasi = (
-                pykakasi.kakasi()
-                if hasattr(pykakasi, "kakasi")
-                else pykakasi.Kakasi()
-            )
         except Exception as exc:  # pragma: no cover - depends on local dictionary
             raise EngineUnavailableError(
                 "无法初始化 Sudachi 词典，请重新安装 japanese-language-core[reading]"
             ) from exc
 
     def _romaji(self, reading: str) -> str:
-        return "".join(
-            str(item.get("hepburn", ""))
-            for item in self._kakasi.convert(to_hiragana(reading))
-        )
+        return to_romaji(to_hiragana(reading))
 
     @staticmethod
     def _safe_attr(match, method: str) -> str:

@@ -7,5 +7,5 @@ the submodules they use (``reading``, ``translation``, ``dictionary``,
 heavy so a translation-only install stays dependency-free.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 

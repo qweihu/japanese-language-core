@@ -104,4 +104,6 @@ class LanguageRegistry:
         for info in self._languages.values():
             if info.default:
                 return info
-        raise TranslateError("注册表没有默认语言")
+        raise TranslateError(
+            "核心库不设置默认目标语言；请由调用方根据用户语境明确选择语言"
+        )

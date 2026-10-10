@@ -93,7 +93,11 @@ def main(argv: list[str] | None = None) -> int:
 
     translate_parser = subparsers.add_parser("translate", help="通过 BYO-LLM 端点翻译")
     translate_parser.add_argument("--source", required=True)
-    translate_parser.add_argument("--target-lang", default="zh-CN")
+    translate_parser.add_argument(
+        "--target-lang",
+        required=True,
+        help="目标语言代码；由调用方根据用户语境明确传入",
+    )
     translate_parser.add_argument("--base-url", required=True)
     translate_parser.add_argument("--model", required=True)
     translate_parser.add_argument("--api-key")

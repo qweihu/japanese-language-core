@@ -2,10 +2,10 @@
 
 **[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
 
-Nihongo Core is a professional Japanese language processing library for
-Python: contextual reading, kana and romaji, furigana alignment,
-deinflection, line-preserving translation contracts, dictionary metadata,
-grammar patterns, and export contracts.
+Nihongo Core is a Python library of reusable Japanese language capabilities:
+contextual reading, kana and romaji, furigana alignment, deinflection,
+line-preserving translation contracts, dictionary metadata, grammar patterns,
+and export contracts.
 
 It is built around two ideas:
 
@@ -41,10 +41,11 @@ It is built around two ideas:
 | [`japanese_language_core.export.mining`](#mining-pipeline) | Mining Pipeline | Anki mining pipeline contract (sentence → note → payload) |
 | [`japanese_language_core.sentences`](#sentence-bank) | Sentence Bank | Tatoeba sentence bank reader (CC BY 2.0 data) |
 
-> **Capability maturity.** `reading` and `translation` are the production
-> core. `dictionary`, `grammar`, and `export` are stable but experimental:
-> their interfaces are tested, yet no bundled consumer depends on them yet —
-> build on them at your own pace.
+> **Capability status.** `reading` and `translation` have working APIs and
+> application consumers, but current tests validate output contracts rather
+> than human reading accuracy or semantic translation quality. The reviewed
+> reading benchmark is still in progress. `dictionary`, `grammar`, and `export`
+> are experimental and have no bundled consumers yet.
 
 <p align="center">
   <img src="screenshot/en/reading.png" alt="Reading example" width="820">
@@ -81,14 +82,17 @@ into the environment's `bin` directory); it behaves identically on every
 platform, regardless of `python` vs `python3`.
 
 ```bash
-# reading only (Sudachi / Fugashi / PyKakasi)
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+# context-aware reading (Sudachi + dictionary; no GPL fallback dependency)
+python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
 # translation only (standard library, no dependencies)
-python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
-# everything
-python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+# all permissive runtime extras
+python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
+
+# optional PyKakasi/Fugashi comparison engine (GPL-3.0 dependency chain)
+python3 -m pip install "japanese-language-core[pykakasi] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 ```
 
 Local development:
@@ -195,7 +199,7 @@ With the Sudachi engine each token also carries morphological metadata
 
 | Mode | Behavior | Best for |
 | --- | --- | --- |
-| `auto` | Prefer Sudachi; fall back to PyKakasi if unavailable | Normal use |
+| `auto` | Prefer Sudachi; fall back to PyKakasi only if the optional GPL extra is installed | Normal use |
 | `sudachi` | Require Sudachi and its dictionary | Strict production/CI |
 | `pykakasi` | Fugashi/PyKakasi path | Compatibility and comparison |
 
@@ -204,7 +208,9 @@ engines. `ReadingEngine` is the only public boundary; you never touch Sudachi
 `Morpheme`, Fugashi tag objects, or dictionary internals.
 
 In `auto` mode the active engine is available as `engine.name` (including
-after a fallback); log it if you need to know. For strict consistency use
+after a fallback); log it if you need to know. If Sudachi is unavailable and
+the optional `[pykakasi]` extra is not installed, automatic mode raises
+`EngineUnavailableError`. For strict consistency use
 `--engine sudachi` / `--engine pykakasi`. The CLI prints the engine name with
 `reading --verbose`.
 
@@ -226,8 +232,9 @@ print(to_romaji("しんぶん"))     # → shimbun   (Hepburn: n → m before b/
 print(to_romaji("がっこう"))     # → gakkou    (small tsu doubles consonant)
 ```
 
-The romaji converter is a pragmatic Hepburn reader. For production-grade
-romanization, use the engine's `hepburn` field (requires the `[reading]` extra).
+The core Hepburn-style converter is dependency-free and is used for Sudachi
+tokens. The optional PyKakasi comparison engine is installed separately with
+`[pykakasi]`; it is not part of the default reading or `all` extras.
 
 <p align="center"><img src="screenshot/en/kana.png" alt="Kana and romaji" width="820"></p>
 
@@ -654,7 +661,7 @@ python -m japanese_language_core.translation validate
 
 python -m japanese_language_core.translation translate
     --source FILE | -        source Japanese text
-    --target-lang CODE       default zh-CN
+    --target-lang CODE       required; choose it in the calling application
     --base-url URL           OpenAI-compatible endpoint
     --model NAME             model identifier
     --api-key KEY            optional; env JAPANESE_LANGUAGE_CORE_API_KEY
@@ -701,8 +708,13 @@ This library is intentionally not:
 ## Testing
 
 ```bash
+python3 -m pip install -e ".[all,pykakasi]"
 python3 -m unittest discover -s tests -v
 ```
+
+The test suite installs the optional PyKakasi comparison engine because a few
+compatibility tests exercise it. Normal reading installs can use `[reading]`
+or `[all]` without that GPL-3.0 dependency chain.
 
 The suite covers source preservation, contextual readings, kana/romaji,
 furigana alignment, deinflection, translation validation, provider transport,
@@ -719,6 +731,7 @@ Yomitan parsing, JLPT analysis, grammar detection, and export round-trips.
 
 ## License
 
-MIT. This project builds on open-source foundations (Sudachi, Fugashi,
-PyKakasi, UniDic, and the Yomitan dictionary format); their licenses remain
-with the respective projects.
+MIT. The default reading extra uses Sudachi and its dictionary. The optional
+`pykakasi` extra installs PyKakasi, Fugashi and UniDic-Lite; PyKakasi is
+GPL-3.0, so that extra is kept separate from the default and `all` installs.
+Third-party projects and dictionary data retain their own licenses.

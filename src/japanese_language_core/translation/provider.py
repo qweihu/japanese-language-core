@@ -30,7 +30,7 @@ class Translator(Protocol):
         units: list[TranslationUnit],
         *,
         source_lang: str = "ja",
-        target_lang: str = "zh-CN",
+        target_lang: str,
     ) -> TranslationResult:
         ...
 
@@ -51,7 +51,7 @@ class AgentTranslator:
         units: list[TranslationUnit],
         *,
         source_lang: str = "ja",
-        target_lang: str = "zh-CN",
+        target_lang: str,
     ) -> TranslationResult:
         raise TranslateError(
             "AgentTranslator 不发起网络调用：请由 Agent 按技能约定完成翻译，"
@@ -110,7 +110,7 @@ class OpenAICompatibleTranslator:
         units: list[TranslationUnit],
         *,
         source_lang: str = "ja",
-        target_lang: str = "zh-CN",
+        target_lang: str,
     ) -> TranslationResult:
         registry = LanguageRegistry.from_package()
         language = registry.get(target_lang)

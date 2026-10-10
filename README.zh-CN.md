@@ -37,9 +37,9 @@ Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文�
 | [`japanese_language_core.export.mining`](#闪卡挖掘mining) | 挖句流水线 | Anki 挖句流水线契约（句 → 笔记 → payload） |
 | [`japanese_language_core.sentences`](#例句句库sentences) | 例句句库 | Tatoeba 句库读取器（数据 CC BY 2.0） |
 
-> **能力成熟度**：`reading` 与 `translation` 是生产级核心；`dictionary`、
-> `grammar`、`export` 是稳定但实验性的能力——接口有测试，但目前没有内置
-> 消费方依赖它们，请按需使用。
+> **能力状态**：`reading` 与 `translation` 有可用 API 和应用调用方，但当前测试
+> 验证的是契约和原文保真，并未测量人工读音准确率或翻译语义质量；读音人工评测
+> 仍在建设中。`dictionary`、`grammar`、`export` 属于实验能力，目前没有内置消费方。
 
 <p align="center">
   <img src="screenshot/zh/reading.png" alt="读音示例" width="820">
@@ -72,14 +72,17 @@ source .venv/bin/activate      # macOS/Linux；Windows: .venv\Scripts\activate
 各平台行为一致，不区分 `python`/`python3`。
 
 ```bash
-# 仅读音（Sudachi / Fugashi / PyKakasi）
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+# 上下文读音（Sudachi + 词典；不包含 GPL 对照引擎）
+python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
 # 仅翻译（纯标准库，零依赖）
-python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
-# 全部
-python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+# 全部宽松许可的运行依赖
+python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
+
+# 可选 PyKakasi 对照引擎（依赖链含 GPL-3.0）
+python3 -m pip install "japanese-language-core[pykakasi] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 ```
 
 本地开发：
@@ -184,7 +187,7 @@ Sudachi 引擎下每个 token 还携带形态学元数据（PyKakasi 路径下�
 
 | 模式 | 行为 | 适用 |
 | --- | --- | --- |
-| `auto` | 优先 Sudachi，不可用时回退 PyKakasi | 常规使用 |
+| `auto` | 优先 Sudachi；只有安装了可选 PyKakasi 依赖时才会回退 | 常规使用 |
 | `sudachi` | 强制 Sudachi + 词典 | 严格生产/CI |
 | `pykakasi` | Fugashi/PyKakasi 路径 | 兼容与对比 |
 
@@ -192,9 +195,10 @@ Sudachi 引擎下每个 token 还携带形态学元数据（PyKakasi 路径下�
 `ReadingEngine` 是唯一公共边界；你不接触 Sudachi `Morpheme`、Fugashi tag
 对象或词典内部结构。
 
-`auto` 模式下实际使用的引擎可通过 `engine.name` 读取（含降级后）；需要严格
-一致时用 `--engine sudachi` / `--engine pykakasi`。CLI 可用
-`reading --verbose` 打印引擎名。
+`auto` 模式下实际使用的引擎可通过 `engine.name` 读取（含降级后）；Sudachi
+不可用且未安装 `[pykakasi]` 时会抛出 `EngineUnavailableError`。需要严格一致时用
+`--engine sudachi` / `--engine pykakasi`。CLI 的 `reading --verbose` 还会打印
+Python 和可获取的引擎包版本。
 
 <p align="center"><img src="screenshot/zh/reading.png" alt="读音示例" width="820"></p>
 
@@ -214,8 +218,8 @@ print(to_romaji("しんぶん"))     # → shimbun   （Hepburn：ん 在 b/m/p 
 print(to_romaji("がっこう"))     # → gakkou    （促音双写）
 ```
 
-罗马音转换器是务实的 Hepburn 实现；生产级罗马音建议使用引擎的
-`hepburn` 字段（需 `[reading]` 扩展）。
+核心库使用无额外依赖的 Hepburn 转换器，Sudachi token 的 `hepburn` 字段也由它生成。
+可选 PyKakasi 对照引擎单独通过 `[pykakasi]` 安装，不属于默认读音依赖。
 
 <p align="center"><img src="screenshot/zh/kana.png" alt="假名与罗马音" width="820"></p>
 
@@ -328,7 +332,7 @@ python3 -m japanese_language_core.translation languages
 
 ```text
 en: English
-zh-CN: 简体中文（默认）
+zh-CN: 简体中文
 ```
 
 ```python
@@ -621,7 +625,7 @@ python -m japanese_language_core.translation validate
 
 python -m japanese_language_core.translation translate
     --source FILE | -       源日语文本
-    --target-lang CODE      默认 zh-CN
+    --target-lang CODE      必填；由调用方根据用户语境选择
     --base-url URL          OpenAI 兼容端点
     --model NAME            模型标识
     --api-key KEY           可选；环境变量 JAPANESE_LANGUAGE_CORE_API_KEY
@@ -663,8 +667,11 @@ python -m japanese_language_core.translation languages
 ## 测试
 
 ```bash
+python3 -m pip install -e ".[all,pykakasi]"
 python3 -m unittest discover -s tests -v
 ```
+
+少量兼容性测试会运行可选的 PyKakasi 对照引擎，因此完整测试环境需要安装它。普通读音使用者可只安装 `[reading]` 或 `[all]`，无需安装这条 GPL-3.0 依赖链。
 
 测试覆盖原文保真、上下文读音、假名/罗马音、读音对齐、活用形还原、
 翻译校验、provider 传输、Yomitan 解析、JLPT 分析、语法检测与导出往返。
@@ -679,5 +686,5 @@ python3 -m unittest discover -s tests -v
 
 ## 许可
 
-MIT。本项目基于开源组件（Sudachi、Fugashi、PyKakasi、UniDic、Yomitan
-词典格式）构建；各自许可证归各自项目所有。
+MIT。默认读音运行依赖为 Sudachi 和其词典。可选 PyKakasi 对照依赖包含 GPL-3.0
+依赖链，因此从默认读音依赖和 `[all]` 中分离；各依赖与词典数据的许可归各自项目所有。

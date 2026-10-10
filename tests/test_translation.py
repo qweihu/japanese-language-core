@@ -3,6 +3,7 @@ import unittest
 from japanese_language_core.translation import (
     GlossaryEntry,
     LanguageRegistry,
+    TranslateError,
     TermGlossary,
     TranslationUnit,
     validate_translation,
@@ -38,9 +39,10 @@ class TranslationContractTests(unittest.TestCase):
         errors, warnings = validate_translation(self.source, bad, paired=True)
         self.assertTrue(any("HTML" in error for error in errors))
 
-    def test_registry_default(self):
+    def test_registry_requires_explicit_target_language(self):
         registry = LanguageRegistry.from_package()
-        self.assertEqual("zh-CN", registry.default().code)
+        with self.assertRaises(TranslateError):
+            registry.default()
         self.assertIn("en", registry.codes())
 
     def test_glossary_consistency(self):

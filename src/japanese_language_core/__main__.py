@@ -17,14 +17,21 @@ import argparse
 import json
 import sys
 
-from .reading import create_engine
+from .reading import create_engine, runtime_metadata
 from .translation.__main__ import _languages, _translate, _validate
 
 
 def _reading(args: argparse.Namespace) -> int:
     engine = create_engine(args.engine)
     if args.verbose:
-        print(f"engine={engine.name}", file=sys.stderr)
+        metadata = runtime_metadata(engine)
+        engine_name = metadata["engine"]
+        python_version = metadata["python"]
+        packages = json.dumps(metadata["packages"], ensure_ascii=False, sort_keys=True)
+        print(
+            f"engine={engine_name} python={python_version} packages={packages}",
+            file=sys.stderr,
+        )
     text = sys.stdin.read() if args.text in (None, "-") else args.text
     for token in engine.tokens(text):
         print(
@@ -71,7 +78,11 @@ def main(argv: list[str] | None = None) -> int:
 
     translate = subparsers.add_parser("translate", help="通过 BYO-LLM 端点翻译")
     translate.add_argument("--source", required=True)
-    translate.add_argument("--target-lang", default="zh-CN")
+    translate.add_argument(
+        "--target-lang",
+        required=True,
+        help="目标语言代码；由调用方根据用户语境明确传入",
+    )
     translate.add_argument("--base-url", required=True)
     translate.add_argument("--model", required=True)
     translate.add_argument("--api-key")

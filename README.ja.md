@@ -2,7 +2,7 @@
 
 **[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
 
-Nihongo Core は Python 向けのプロフェッショナルな日本語処理ライブラリです：
+Nihongo Core は Python 向けの再利用可能な日本語言語機能ライブラリです：
 文脈付き読み、かな/ローマ字、読み-漢字アライメント、活用形復元、行単位翻訳
 コントラクト、辞書メタデータ、文法パターン検出、エクスポート契約。
 
@@ -13,9 +13,10 @@ Nihongo Core は Python 向けのプロフェッショナルな日本語処理�
 - **依存は必要に応じて**：ベースは依存ゼロ。読みは形態素辞書が必要、
   翻訳は LLM 能力（エンドポイントはユーザーが用意）。
 
-> **能力の成熟度**：`reading` と `translation` が本番コアです。
-> `dictionary` / `grammar` / `export` は安定していますが実験的で、
-> 組み込みの消費者はまだ依存していません。必要に応じて使ってください。
+> **能力の状態**：`reading` と `translation` には利用可能な API とアプリ利用者が
+> いますが、現在のテストは契約と原文保持を確認するもので、人間の読音正確率や
+> 翻訳の意味品質を測定したものではありません。読音ベンチマークを整備中です。
+> `dictionary` / `grammar` / `export` は実験的で、組み込みの消費者はまだありません。
 
 ## 機能一覧
 
@@ -76,10 +77,14 @@ Python 2 を指すことがあるため、仮想環境の外では `python3` を
 プラットフォームに関わらず同じ挙動です。
 
 ```bash
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.2.0"
+python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 ```
 
-`[translation]` は標準ライブラリのみ、`[all]` で全部入りです。
+`[translation]` は標準ライブラリのみです。`[all]` は既定の読み処理を含みます。
+PyKakasi 比較エンジンは `.[pykakasi]` で別途導入します。この追加依存は GPL-3.0
+ライセンスなので、既定の読みに関する追加依存や `[all]` には含めません。
+`auto` は Sudachi が利用できない場合に、追加依存が導入済みの場合だけ PyKakasi に
+フォールバックします。どちらも利用できない場合は `EngineUnavailableError` になります。
 
 ## クイックスタート
 
@@ -246,7 +251,7 @@ python -m japanese_language_core.translation validate
 
 python -m japanese_language_core.translation translate
     --source FILE | -       ソース
-    --target-lang CODE      デフォルト zh-CN
+    --target-lang CODE      必須。呼び出し側で選択
     --base-url URL          OpenAI 互換エンドポイント
     --model NAME            モデル
     --api-key KEY           任意；環境変数 JAPANESE_LANGUAGE_CORE_API_KEY
@@ -284,10 +289,16 @@ python -m japanese_language_core.translation languages
 ## テスト
 
 ```bash
+python3 -m pip install -e ".[all,pykakasi]"
 python3 -m unittest discover -s tests -v
 ```
 
+互換性テストの一部で任意の PyKakasi 比較エンジンを使うため、テストでは追加依存を
+インストールします。通常の読み取り利用では、GPL-3.0 の依存チェーンを含まない
+`[reading]` または `[all]` を使用できます。
+
 ## ライセンス
 
-MIT。依存 OSS（Sudachi、Fugashi、PyKakasi、UniDic、Yomitan 辞書形式）の
+MIT。既定の読みに関する追加依存は Sudachi と辞書です。PyKakasi、Fugashi、UniDic-Lite
+を含む任意の比較用追加依存は GPL-3.0 を含むため分離しています。依存 OSS と辞書データの
 ライセンスは各プロジェクトに帰属します。

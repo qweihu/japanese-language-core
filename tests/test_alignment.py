@@ -13,6 +13,15 @@ class AlignmentTests(unittest.TestCase):
         pairs = align_reading("食べる", "たべる")
         self.assertEqual([("食", "た"), ("べ", "べ"), ("る", "る")], pairs)
 
+    def test_repeated_okurigana_kana_uses_the_later_boundary(self):
+        self.assertEqual(
+            [("歌", "うた"), ("う", "う")],
+            align_reading("歌う", "うたう"),
+        )
+
+    def test_ambiguous_okurigana_keeps_a_safe_whole_word_reading(self):
+        self.assertEqual([("仮名な", "な")], align_reading("仮名な", "な"))
+
     def test_ambiguous_compound(self):
         pairs = align_reading("好き嫌い", "すききらい")
         self.assertEqual("好き嫌い", "".join(surface for surface, _ in pairs))

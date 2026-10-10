@@ -20,6 +20,12 @@ class ReadingEngineTests(unittest.TestCase):
         readings = [(token.orig, token.hira) for token in tokens if token.hira]
         self.assertIn(("降り止む", "ふりやむ"), readings)
 
+    def test_sudachi_romaji_uses_the_core_hepburn_converter(self):
+        tokens = tuple(SudachiEngine().tokens("日本語と新聞"))
+        readings = {token.orig: token.hepburn for token in tokens}
+        self.assertEqual("nihongo", readings["日本語"])
+        self.assertEqual("shimbun", readings["新聞"])
+
     def test_whitespace_and_newlines_are_tokens(self):
         text = "  日本語\r\n\tを読む"
         tokens = tuple(create_engine("sudachi").tokens(text))

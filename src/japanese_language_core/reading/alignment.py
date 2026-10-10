@@ -44,8 +44,20 @@ def align_reading(term: str, reading: str) -> list[tuple[str, str]]:
             term_index += 1
         next_kana = term_hira[term_index] if term_index < len(term_hira) else None
         while reading_index < len(reading_hira):
-            if next_kana is not None and reading_hira[reading_index] == next_kana:
-                break
+            if next_kana is not None:
+                boundary = reading_hira.find(next_kana, reading_index)
+                if boundary == reading_index:
+                    # A word's reading may begin with the same kana as its
+                    # okurigana boundary, e.g. 歌う -> うたう. Prefer the
+                    # later boundary; if there is none, keep the whole word
+                    # together instead of assigning an empty kanji reading.
+                    later_boundary = reading_hira.find(next_kana, boundary + 1)
+                    if later_boundary < 0:
+                        return [(term, reading_hira)]
+                    boundary = later_boundary
+                if boundary >= 0:
+                    reading_index = boundary
+                    break
             reading_index += 1
         pairs.append(("".join(surface), reading_hira[start:reading_index]))
     return pairs

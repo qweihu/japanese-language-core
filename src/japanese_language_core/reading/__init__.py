@@ -9,6 +9,7 @@ from .engine import (
     ReadingToken,
     SudachiEngine,
     create_engine,
+    runtime_metadata,
 )
 from .kana import (
     is_hiragana,
@@ -39,6 +40,7 @@ __all__ = [
     "conjugate",
     "count_mora",
     "create_engine",
+    "runtime_metadata",
     "deinflect",
     "is_hiragana",
     "is_kanji",
