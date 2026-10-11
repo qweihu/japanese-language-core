@@ -1,737 +1,145 @@
-# Nihongo Core（japanese-language-core）
+# Nihongo Core
 
-**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+**[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)**
 
-Nihongo Core is a Python library of reusable Japanese language capabilities:
-contextual reading, kana and romaji, furigana alignment, deinflection,
-line-preserving translation contracts, dictionary metadata, grammar patterns,
-and export contracts.
+A reusable Python library for Japanese reading and language-data contracts. Nihongo Core gives applications contextual readings, kana and romaji conversion, translation validation, dictionary readers, grammar checks, and export models.
 
-It is built around two ideas:
+It is a library, not a lyric search service, end-user app, or Agent workflow. Calling applications decide what to fetch, how to present results, which translation service to use, and which licensed datasets to provide.
 
-- **Deterministic contracts.** Core behaviors are small, testable, versioned
-  interfaces — a reading token, a translation unit, a dictionary entry — so
-  you can build reliable tooling on top of them.
-- **Optional heavy dependencies.** The base package has zero runtime
-  dependencies. Reading needs morphological dictionaries; translation is an
-  LLM capability — you bring the endpoint. Everything else is lightweight.
 
----
+## Capabilities and maturity
 
-## Feature overview
-
-| Module name | Name | What it provides |
+| Area | What it provides | Status and limit |
 | --- | --- | --- |
-| [`japanese_language_core.reading`](#reading) | Reading | Source-preserving tokenization + contextual readings (`auto` / `sudachi` / `pykakasi`) |
-| [`japanese_language_core.reading.kana`](#kana-and-romaji) | Kana & Romaji | Hiragana/katakana conversion, width normalization, Hepburn romaji |
-| [`japanese_language_core.reading.alignment`](#furigana-alignment) | Furigana Alignment | Distribute readings across kanji for ruby rendering |
-| [`japanese_language_core.reading.deinflect`](#deinflection) | Deinflection | Conjugated form → dictionary-form candidates |
-| [`japanese_language_core.reading.conjugator`](#deinflection) | Conjugation | Dictionary form → common conjugation forms |
-| [`japanese_language_core.reading.splitter`](#reading) | Sentence Splitter | Sentence splitting (terminators kept attached) |
-| [`japanese_language_core.reading.mora`](#reading) | Mora Counter | Mora (拍) counting |
-| [`japanese_language_core.translation`](#translation) | Translation | Line-preserving contract, validation, language registry, glossary checks |
-| [`japanese_language_core.translation.provider`](#byo-llm-translation) | Translation Providers | Agent mode (no API) or BYO-LLM (any OpenAI-compatible endpoint) |
-| [`japanese_language_core.dictionary`](#dictionary) | Dictionary | Yomitan-format dictionary reader + JLPT difficulty analysis |
-| [`japanese_language_core.dictionary.jmnedict`](#proper-nouns-jmnedict) | Proper Nouns (JMnedict) | Proper-noun lookup: readings and categories |
-| [`japanese_language_core.dictionary.pitch`](#search-pitch-scoring-stroke-order) | Pitch Accent | Accent position → H/L pattern and classification |
-| [`japanese_language_core.dictionary.scoring`](#search-pitch-scoring-stroke-order) | Difficulty Scoring | Readability / difficulty scores |
-| [`japanese_language_core.dictionary.kanjivg`](#search-pitch-scoring-stroke-order) | Stroke Order (KanjiVG) | Stroke-order and radical reader (data self-provided) |
-| [`japanese_language_core.grammar`](#grammar) | Grammar | Particle and common grammar-pattern detection |
-| [`japanese_language_core.export`](#export) | Export | Anki note contract and paired Markdown layout |
-| [`japanese_language_core.export.mining`](#mining-pipeline) | Mining Pipeline | Anki mining pipeline contract (sentence → note → payload) |
-| [`japanese_language_core.sentences`](#sentence-bank) | Sentence Bank | Tatoeba sentence bank reader (CC BY 2.0 data) |
+| Reading | Contextual tokens, hiragana, Hepburn, reading alignment, kana utilities, deinflection, conjugation, sentence splitting, mora counts | Public API used by applications. Tests check contracts and source preservation, not human reading accuracy. |
+| Translation | Line-based data model, validator, language registry, glossary checks, optional OpenAI-compatible client | Public contract. Structural checks cannot prove semantic quality. You supply the model endpoint and key. |
+| Reference data | Yomitan terms and kanji, JMnedict names, pitch accent, difficulty scoring, KanjiVG, Tatoeba sentences | Readers and data adapters; most are experimental. Supply datasets and follow their licenses. |
+| Composition | Particle and pattern checks, Anki payloads, paired Markdown, sentence-mining contracts | Experimental building blocks; user flows and network calls belong to the application. |
 
-> **Capability status.** `reading` and `translation` have working APIs and
-> application consumers, but current tests validate output contracts rather
-> than human reading accuracy or semantic translation quality. The reviewed
-> reading benchmark is still in progress. `dictionary`, `grammar`, and `export`
-> are experimental and have no bundled consumers yet.
-
-<p align="center">
-  <img src="screenshot/en/reading.png" alt="Reading example" width="820">
-  <br><sub>Source-preserving tokenization with contextual readings</sub>
-</p>
+The repository does not bundle large dictionary or sentence archives. See [benchmark notes](docs/benchmarks.md) and the [reading review sheet](docs/reading-review-sheet.md) for the current evaluation limits and review status.
 
 ## Install
 
-Python 3.10+.
+Python 3.10+. The base package has no runtime dependencies.
 
-### Virtual environments (recommended)
+| Install | Includes |
+| --- | --- |
+| <code>japanese-language-core[reading]</code> | SudachiPy and SudachiDict Core for contextual reading |
+| <code>japanese-language-core[translation]</code> | Translation contracts and validator; standard library only |
+| <code>japanese-language-core[all]</code> | The default reading dependencies |
+| <code>japanese-language-core[pykakasi]</code> | Optional comparison engine; its Fugashi/PyKakasi dependency chain includes GPL-3.0 |
 
-Always install into a virtual environment so your system Python stays clean.
-If you do not have one yet, create it first:
+~~~bash
+python3 -m venv .venv
+source .venv/bin/activate
 
-```bash
-python3 -m venv .venv          # create the environment
-source .venv/bin/activate      # macOS/Linux; Windows: .venv\Scripts\activate
-```
+# Reading API
+python -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
-Then run the commands below inside the activated environment.
+# Or translation contracts only
+python -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
+~~~
 
-### Python and the `python3` command
+For local development:
 
-The library requires Python 3.10+. On macOS and many Linux distributions the
-bare `python` command may be missing or point to Python 2, so use `python3`
-outside a virtual environment. Inside an activated virtual environment both
-`python` and `python3` work; when the environment is not activated, call the
-interpreter explicitly, for example
-`.venv/bin/python -m japanese_language_core ...`.
-
-After installation you can also use the `nihongo` console command (installed
-into the environment's `bin` directory); it behaves identically on every
-platform, regardless of `python` vs `python3`.
-
-```bash
-# context-aware reading (Sudachi + dictionary; no GPL fallback dependency)
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# translation only (standard library, no dependencies)
-python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# all permissive runtime extras
-python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# optional PyKakasi/Fugashi comparison engine (GPL-3.0 dependency chain)
-python3 -m pip install "japanese-language-core[pykakasi] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-```
-
-Local development:
-
-```bash
+~~~bash
 git clone https://github.com/qweihu/japanese-language-core.git
 cd japanese-language-core
 python3 -m pip install -e ".[reading]"
-```
+~~~
 
-The top-level package imports nothing heavy. Heavy adapters load lazily inside
-`reading`, so a translation-only installation stays dependency-free.
+## Quick start: readings
 
-## Quick start
-
-### 1. Get readings for a sentence
-
-```python
+~~~python
 from japanese_language_core.reading import create_engine
 
 engine = create_engine("auto")
 tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
+
 for token in tokens:
     print(token.orig, token.hira, token.hepburn)
-```
 
-Input `雨が降り止むまでは帰れない` → readings
-`あめ / が / ふりやむ / まで / は / かえれ / ない`
-(Hepburn: `ame / ga / furiyamu / made / ha / kaere / nai`).
-
-```python
 assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
-```
+~~~
 
-### 2. Validate a line-preserving translation
+The tokens preserve the exact source while adding readings: <code>雨 → あめ</code>,
+<code>降り止む → ふりやむ</code>, <code>帰れ → かえれ</code>. Whitespace and line endings are
+preserved too.
 
-```bash
-python3 -m japanese_language_core.translation validate \
+<p align="center"><img src="screenshot/en/reading.png" alt="Token rows showing source, hiragana, and Hepburn readings" width="820"><br><sub>Reading example · source segments reconstruct the input while each reading stays attached.</sub></p>
+
+## Reading details
+
+- <code>create_engine("auto")</code> prefers Sudachi. It falls back to the optional PyKakasi path only when that extra is installed; otherwise an unavailable reading engine raises an error.
+- <code>ReadingToken.orig</code> pieces reconstruct the input exactly. <code>hira</code> and <code>hepburn</code> contain the reading; the Sudachi path can also expose morphological metadata.
+- Kana conversion and Hepburn romanization are available without the reading extra.
+
+<p align="center"><img src="screenshot/en/kana.png" alt="Katakana converted to hiragana and Hepburn" width="820"><br><sub>Kana conversion · the same text shown in both scripts and romaji.</sub></p>
+
+<p align="center"><img src="screenshot/en/inflection.png" alt="Japanese verb form analysis and generated forms" width="820"><br><sub>Inflection example · a verb form is analyzed and common forms are generated.</sub></p>
+
+Reading output is not a guarantee that every name, lyric, dialect, or ambiguous kanji reading is correct. The current review sheet is a small process check, not an accuracy score or a human-reviewed benchmark.
+
+## Translation contracts
+
+Core does not provide a translation model. It can send line-based units to an OpenAI-compatible endpoint you configure, or let an Agent supply translations to the same data contract.
+
+The validator can check:
+
+- one-to-one non-empty line pairing when <code>paired=True</code>;
+- Ruby markup and source reconstruction;
+- preservation of placeholders such as <code>♪</code>, <code>[Chorus]</code>, and bracketed notes;
+- Japanese kana left in a translated line;
+- optional glossary consistency.
+
+Line-count and structure failures are errors. Kana leakage is a warning unless strict warnings are requested. Passing validation means the shape is consistent; it does not mean the translation is accurate, natural, or faithful to the song.
+
+<p align="center"><img src="screenshot/en/translation.png" alt="One valid line pair and one kana-leak warning" width="820"><br><sub>Validation example · structure passes while untranslated Japanese is flagged.</sub></p>
+
+To use the optional client, supply the endpoint, model, and key in your application. Core does not ship credentials or choose the target language for callers.
+
+## Reference and experimental modules
+
+These modules are reusable parts, not turnkey products. Dataset access, licensing, caching, user interfaces, and product decisions stay with the consuming application.
+
+### Dictionary and sentence readers
+
+Yomitan dictionary readers can expose readings, definitions, tags, frequency, pitch-accent and JLPT metadata. JMnedict supports name lookups; KanjiVG readers expose stroke-order data. The sentence reader handles Tatoeba pairs; the dataset is separately supplied and licensed CC BY 2.0.
+
+<p align="center"><img src="screenshot/en/dictionary.png" alt="A Yomitan dictionary row with reading and metadata" width="820"><br><sub>Dictionary reader · entry fields are read from data supplied by the caller.</sub></p>
+
+<p align="center"><img src="screenshot/en/sentences.png" alt="A Tatoeba Japanese sentence and paired translation" width="820"><br><sub>Sentence reader · one source sentence stays paired with its supplied translation.</sub></p>
+
+### Grammar and export
+
+Grammar helpers perform deterministic particle and pattern checks; they are not a complete grammar parser. Export models can build Anki TSV or AnkiConnect payloads and paired Markdown, but do not perform Anki network actions or manage a learner's collection.
+
+<p align="center"><img src="screenshot/en/grammar.png" alt="Targeted checks for particles and grammar patterns" width="820"><br><sub>Grammar checks · individual patterns are reported without claiming full parsing.</sub></p>
+
+<p align="center"><img src="screenshot/en/export.png" alt="Anki TSV fields and paired-text export example" width="820"><br><sub>Export payload · a concrete row is ready for the calling application.</sub></p>
+
+## Command line
+
+The <code>nihongo</code> command and <code>python -m japanese_language_core</code> expose deterministic operations. Translation validation and translation helpers also have their own module entry point.
+
+~~~bash
+nihongo --help
+python -m japanese_language_core.translation validate \
   --source source.txt --translation translation.txt --paired
-```
-
-With `source.txt`:
-
-```text
-明日は晴れる。
-一緒に歩こう。
-```
-
-and `translation.txt`:
-
-```text
-明天会放晴。
-一起走吧。
-```
-
-Exits 0 when the lines line up; see Validation below for warning and failure
-outcomes.
-
-### 3. Translate with your own LLM endpoint
-
-```python
-from japanese_language_core.translation import (
-    OpenAICompatibleTranslator, TranslationUnit,
-)
-
-translator = OpenAICompatibleTranslator(
-    base_url="http://localhost:11434/v1", model="llama3.1",
-)
-result = translator.translate(
-    [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")],
-    target_lang="zh-CN",
-)
-for unit in result.units:
-    print(unit.source, "→", unit.translation)
-```
-
-```text
-明日は晴れる。 → 明天会放晴。
-一緒に歩こう。 → 一起走吧。
-```
-
-## Reading
-
-`create_engine` returns a `ReadingEngine` whose `tokens(text)` yields
-`ReadingToken(orig, hira, hepburn)` fragments. The `orig` fields always
-reconstruct the input, including whitespace and line endings.
-
-```python
-from japanese_language_core.reading import ReadingToken
-
-token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
-```
-
-With the Sudachi engine each token also carries morphological metadata
-(empty on the PyKakasi path):
-
-| Field | Meaning |
-| --- | --- |
-| `part_of_speech` | Slash-joined POS tags (e.g. `名詞/普通名詞/一般`) |
-| `dictionary_form` | Dictionary form (辞書形) |
-| `normalized_form` | Sudachi normalized form (standard form) |
-
-### Engine modes
-
-| Mode | Behavior | Best for |
-| --- | --- | --- |
-| `auto` | Prefer Sudachi; fall back to PyKakasi only if the optional GPL extra is installed | Normal use |
-| `sudachi` | Require Sudachi and its dictionary | Strict production/CI |
-| `pykakasi` | Fugashi/PyKakasi path | Compatibility and comparison |
-
-Strict modes raise `EngineUnavailableError` instead of silently switching
-engines. `ReadingEngine` is the only public boundary; you never touch Sudachi
-`Morpheme`, Fugashi tag objects, or dictionary internals.
-
-In `auto` mode the active engine is available as `engine.name` (including
-after a fallback); log it if you need to know. If Sudachi is unavailable and
-the optional `[pykakasi]` extra is not installed, automatic mode raises
-`EngineUnavailableError`. For strict consistency use
-`--engine sudachi` / `--engine pykakasi`. The CLI prints the engine name with
-`reading --verbose`.
-
-<p align="center"><img src="screenshot/en/reading.png" alt="Reading example" width="820"></p>
-
-## Kana and romaji
-
-Pure standard-library utilities:
-
-```python
-from japanese_language_core.reading import (
-    to_hiragana, to_katakana, to_romaji, is_kana, is_kanji,
-)
-
-print(to_hiragana("ニホンゴ"))   # → にほんご
-print(to_katakana("にほんご"))   # → ニホンゴ
-print(to_hiragana("ﾆﾎﾝｺﾞ"))     # → にほんご  (halfwidth + dakuten)
-print(to_romaji("しんぶん"))     # → shimbun   (Hepburn: n → m before b/m/p)
-print(to_romaji("がっこう"))     # → gakkou    (small tsu doubles consonant)
-```
-
-The core Hepburn-style converter is dependency-free and is used for Sudachi
-tokens. The optional PyKakasi comparison engine is installed separately with
-`[pykakasi]`; it is not part of the default reading or `all` extras.
-
-<p align="center"><img src="screenshot/en/kana.png" alt="Kana and romaji" width="820"></p>
-
-## Furigana alignment
-
-`align_reading(term, reading)` distributes a kana reading across the kanji of
-a term — the distribution problem behind ruby rendering:
-
-```python
-from japanese_language_core.reading import align_reading
-
-print(align_reading("食べる", "たべる"))
-```
-
-```text
-[('食', 'た'), ('べ', 'べ'), ('る', 'る')]
-```
-
-```python
-print(align_reading("日本語", "にほんご"))
-```
-
-```text
-[('日本語', 'にほんご')]
-```
-
-Kana in the term is matched verbatim; each kanji run consumes kana greedily
-until the next kana of the term. Ambiguous compounds (好き嫌い) may need
-dictionary-level alignment, which the `dictionary` capability can supply;
-this function is the deterministic fallback. Its greedy choice is a valid but
-not necessarily dictionary-identical distribution (e.g. 好き嫌い → 好=す,
-き=き, 嫌=きら); use dictionary-embedded furigana data when you need
-community identical alignment (the reader supports a per-kanji `furigana`
-extension field when a dictionary provides it). Known limitation.
-
-## Deinflection
-
-`deinflect(word)` returns dictionary-form candidates with the rule chain that
-produced each one:
-
-```python
-from japanese_language_core.reading import deinflect
-
-for candidate in deinflect("食べていました"):
-    print(candidate.word, "|", candidate.reason)
-```
-
-```text
-食べる | past + polite + progressive
-```
-
-(The full result also includes intermediate forms such as `食べている |
-polite past`.) The rule engine strips common suffixes — ます/ない/た/て/ている/
-すぎる/やすい and more — and emits multiple candidates when the ending is
-ambiguous (行った → 行く/行つ/行る/行う). Filter candidates with
-`dictionary.lookup_terms` when you have dictionary data.
-
-<p align="center"><img src="screenshot/en/inflection.png" alt="Inflection" width="820"></p>
-
-## Translation
-
-Translation is an LLM capability. The library provides the contract,
-validation, language registry, and providers — never a bundled model or API
-key.
-
-### Data model
-
-```python
-from japanese_language_core.translation import TranslationUnit, TranslationResult
-
-unit = TranslationUnit("明日は晴れる。", "明天会放晴。")
-result = TranslationResult(
-    source_lang="ja", target_lang="zh-CN",
-    units=[unit], provider="agent",
-)
-print(result.ok)  # True
-```
-
-### Validation
-
-```python
-from japanese_language_core.translation import validate_translation
-
-errors, warnings = validate_translation(
-    source_lines=["明日は晴れる。", "一緒に歩こう。"],
-    translation_lines=["明天会放晴。", "一起走吧。"],
-    paired=True,
-)
-print(errors)    # []
-print(warnings)  # []
-```
-
-Checks performed:
-
-- line pairing (equal non-empty line counts, blank groups preserved);
-- ruby/HTML hygiene (balanced tags, only `ruby`/`rt` allowed);
-- source fidelity (stripping ruby reconstructs the original);
-- placeholder preservation (`♪`, `[Chorus]`, `（…）`, `【…】`);
-- kana leakage (hiragana/katakana left in a translation line);
-- glossary consistency (optional).
-
-CLI outcomes (command shown in Quick start and the CLI reference):
-
-| Situation | Outcome |
-| --- | --- |
-| One-to-one lines, no kana leak | Pass, exit code 0 |
-| Kana leak in a translation line | Warning; exit code 3 with `--strict-warnings` |
-| Line-count mismatch or structural error | Failure, exit code 1 |
-
-<p align="center"><img src="screenshot/en/translation.png" alt="Translation validation" width="820"></p>
-
-### Language registry
-
-```bash
-python3 -m japanese_language_core.translation languages
-```
-
-```text
-en: English
-zh-CN: 简体中文（默认）
-```
-
-```python
-from japanese_language_core.translation import LanguageRegistry
-
-registry = LanguageRegistry.from_package()
-print(registry.default().code)  # zh-CN
-print(registry.codes())         # ['en', 'zh-CN']
-```
-
-The machine-readable registry (`translation/data/languages.json`) drives
-BYO-LLM prompts. Adding a language = register it there and (optionally) add
-human-readable conventions for Agent use.
-
-### Glossary consistency
-
-```python
-from japanese_language_core.translation import TermGlossary, GlossaryEntry
-
-glossary = TermGlossary()
-glossary.add(GlossaryEntry(source="明日", preferred="明天"))
-
-errors, warnings = validate_translation(
-    ["明日は晴れる。"], ["明天会放晴。"], paired=True, glossary=glossary,
-)
-print(warnings)  # []
-```
-
-It warns when a source term is left untranslated, when a non-preferred
-variant is used, or when the same term is translated inconsistently across
-lines.
-
-## BYO-LLM translation
-
-Bring your own OpenAI-compatible endpoint — Ollama, vLLM, LM Studio, gateways.
-Configure `base_url` (the client appends `/chat/completions`), `model`,
-optional `api_key` (or the `JAPANESE_LANGUAGE_CORE_API_KEY` environment
-variable), `temperature`, `max_tokens`, plus `max_retries` /
-`retry_backoff` / `max_chars_per_request`. See Quick start #3 for a runnable
-example.
-
-CLI:
-
-```bash
-export JAPANESE_LANGUAGE_CORE_API_KEY=sk-...
-python3 -m japanese_language_core.translation translate \
-  --source source.txt --target-lang zh-CN \
-  --base-url https://api.example.com/v1 --model my-model
-```
-
-What happens under the hood:
-
-1. the system prompt is built from the registered language's conventions;
-2. few-shot examples from the language registry stabilize style and output
-   shape;
-3. long inputs are split into chunks (`max_chars_per_request`, default 4000)
-   and failed requests are retried (`max_retries`, `retry_backoff`);
-4. the model output is parsed back into one translation per source line; a
-   missing line raises `TranslateError` — no silent truncation;
-5. the result is validated with the same `validate_translation` contract.
-
-For tests, inject a `transport` callable (default is a stdlib `urllib`
-implementation):
-
-```python
-def fake_transport(url, headers, payload):
-    return '{"choices": [{"message": {"content": "1. 明天会放晴。"}}]}'
-
-translator = OpenAICompatibleTranslator(
-    base_url="https://example.test/v1", model="test",
-    transport=fake_transport,
-)
-```
-
-## Dictionary
-
-The dictionary reader consumes the open **Yomitan format** (zip bundles), the
-de-facto standard for community Japanese dictionaries (JMdict-based,
-frequency, pitch accent, JLPT tags, ...). A minimal `term_bank_1.json`:
-
-```json
-[
-  ["日本語", "にほんご", ["language"], [], 0, ["Japanese language"], 100, ["jlptN5"]],
-  ["勉強", "べんきょう", ["n", "vs"], [], 0, ["study"], 101, ["jlptN5"]]
-]
-```
-
-```python
-from japanese_language_core.dictionary import YomitanDictionary
-
-dictionary = YomitanDictionary("JMdict.zip")
-term = dictionary.lookup_terms("日本語")[0]
-print(term.reading, term.definitions, term.tags, term.frequency)
-```
-
-```text
-にほんご ['Japanese language'] ['language', 'jlptN5'] None
-```
-
-Kanji bank lookup:
-
-```python
-kanji = dictionary.lookup_kanji("日")[0]
-print(kanji.onyomi, kanji.kunyomi, kanji.meanings)
-```
-
-```text
-['ニチ', 'ジツ'] ['ひ'] ['day', 'sun']
-```
-
-Supported banks:
-
-| Bank | Contents |
-| --- | --- |
-| `term_bank_*.json` | Expressions, readings, definitions, tags, rules, score, sequence |
-| `term_meta_bank_*.json` | Frequency (`freq`) and pitch accent (`pitch`) |
-| `kanji_bank_*.json` | On/kun readings, meanings, tags, stats |
-| `kanji_meta_bank_*.json` | Kanji frequency |
-| `tag_bank_*.json` | Tag definitions (part of speech, levels, categories) |
-| `index.json` | Dictionary metadata |
-
-Community dictionaries encode frequency and pitch data in a few common
-variants. The reader handles them all: frequency as an integer or a dict with
-a `value`/`frequency` key; pitch as a list of `{position, category}` dicts,
-an integer position, or `"n/a"` (skipped).
-
-### JLPT difficulty analysis
-
-```python
-from japanese_language_core.dictionary import analyze_difficulty
-
-profile = analyze_difficulty("日本語を勉強する。", dictionary)
-print(profile.level_counts(), profile.unknown, profile.score)
-```
-
-```text
-{'n5': 3, 'unknown': 2} ['を', '。'] 5.0
-```
-
-Pass a reading engine to use morphological segmentation instead of the
-longest-match fallback:
-
-```python
-from japanese_language_core.reading import create_engine
-
-profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
-```
-
-<p align="center"><img src="screenshot/en/dictionary.png" alt="Dictionary metadata" width="820"></p>
-
-### Proper nouns (JMnedict)
-
-```python
-names = dictionary.lookup_names("山田")
-print(names[0].readings, names[0].categories)
-```
-
-```text
-('やまだ',) ['surname']
-```
-
-`NameEntry` carries readings, categories (surname/given/place/organization/
-...), and an optional definition. The JMnedict pattern — an empty reading
-column with kana readings stored in the definitions slot — is handled too.
-
-### Search, pitch, scoring, stroke order
-
-```python
-from japanese_language_core.dictionary import (
-    classify, KanjiVGReader, pattern, readability,
-)
-
-dictionary.search("日本", "prefix")       # prefix / substring / wildcard
-pattern(4, 2)                             # ('H', 'H', 'L', 'L') → 中高
-classify(4, 2)                            # "中高 nakadaka"
-readability(profile)                      # 0..1, higher = easier
-KanjiVGReader("path/to/kanjivg").lookup("日")  # strokes, radical (data self-provided)
-```
-
-### Sentence bank
-
-```python
-from japanese_language_core.sentences import SentenceBank
-
-bank = SentenceBank.from_tatoeba("jpn_sentences.tsv", "jpn-cmn_links.tsv")
-examples = bank.lookup("日本語")
-for sentence in examples:
-    print(sentence.text, "→", [t.text for t in bank.translations(sentence.id)])
-```
-
-Reads Tatoeba sentence/link exports (CC BY 2.0); fetching and decompressing
-the export files is the caller's concern.
-
-<p align="center"><img src="screenshot/en/sentences.png" alt="Sentence bank" width="820"></p>
-
-## Grammar
-
-Deterministic, surface-level helpers — fast and testable, not a replacement
-for morphological analysis:
-
-```python
-from japanese_language_core.grammar import find_particles, find_grammar
-
-print([m.particle for m in find_particles("私は東京へ行きます。")])
-```
-
-```text
-['は', 'へ']
-```
-
-```python
-print([(m.name, m.matched) for m in find_grammar("食べているところです。")])
-```
-
-```text
-[('te-iru', 'ている')]
-```
-
-Particle detection recognizes kana runs that are, or end with, a known
-particle. Grammar patterns include te-form constructions (ている/ておく/
-てしまう/てもいい/てはいけない/てほしい), obligations (なければならない/
-ないといけない), potential (ことができる), conditionals (たら/れば), and more.
-
-<p align="center"><img src="screenshot/en/grammar.png" alt="Grammar" width="820"></p>
-
-## Export
-
-### Anki notes
-
-```python
-from japanese_language_core.export import build_note, to_tsv
-from japanese_language_core.translation import TranslationUnit
-
-note = build_note(
-    TranslationUnit("日本語を勉強する。", "学习日语。"),
-    expression="日本語", reading="にほんご",
-    glossary="Japanese language", tags=["jlptN5"],
-)
-print(to_tsv([note]), end="")
-```
-
-```text
-Expression	Reading	Glossary	Sentence	Translation	Audio	Pitch	Frequency	Tags
-日本語	にほんご	Japanese language	日本語を勉強する。	学习日语。				jlptN5
-```
-
-`anki_connect_payload(...)` builds the `addNote` request shape for AnkiConnect;
-the actual API call stays in your application.
-
-### Paired Markdown
-
-```python
-from japanese_language_core.export import build_paired_markdown
-from japanese_language_core.translation import TranslationUnit
-
-markdown = build_paired_markdown([
-    TranslationUnit("日本語を勉強する。", "学习日语。"),
-    TranslationUnit("一緒に歩こう。", "一起走吧。"),
-])
-print(markdown, end="")
-```
-
-```text
-日本語を勉強する。
-学习日语。
-
-一緒に歩こう。
-一起走吧。
-```
-
-One source line, one translation line immediately below, one blank line
-between groups.
-
-### Mining pipeline
-
-`export.mining` is the flashcard-mining contract: sentence → note →
-AnkiConnect payload.
-
-```python
-from japanese_language_core.export import MiningUnit, mining_payload
-
-unit = MiningUnit(
-    sentence="日本語を勉強する。",
-    translation="学习日语。",
-    expression="日本語",
-    reading="にほんご",
-    tags=["jlptN5"],
-)
-payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
-```
-
-<p align="center"><img src="screenshot/en/export.png" alt="Export" width="820"></p>
-
-## CLI reference
-
-```text
-python -m japanese_language_core.translation validate
-    --source FILE | -        source Japanese text
-    --translation FILE | -   translated text
-    --paired                 require equal non-empty line counts
-    --no-kana-warn           disable kana leakage warnings
-    --glossary FILE          JSON glossary ({"entries": [...]})
-    --strict-warnings        exit 3 when warnings exist
-
-python -m japanese_language_core.translation translate
-    --source FILE | -        source Japanese text
-    --target-lang CODE       required; choose it in the calling application
-    --base-url URL           OpenAI-compatible endpoint
-    --model NAME             model identifier
-    --api-key KEY            optional; env JAPANESE_LANGUAGE_CORE_API_KEY
-    --output FILE            write translations to a file
-
 python -m japanese_language_core.translation languages
-    [--registry FILE]        list registered target languages
-```
+~~~
 
-<p align="center"><img src="screenshot/en/cli.png" alt="CLI" width="820"></p>
+<p align="center"><img src="screenshot/en/cli.png" alt="CLI validation output and supported language listing" width="820"><br><sub>CLI output · validation returns a pass result and a warning count.</sub></p>
 
-## Workflow
+## Development and evaluation
 
-Text → reading/dictionary → translation/validation → export/evaluation. The
-capabilities compose as a pipeline; each step keeps a small, testable contract.
+~~~bash
+python3 -m pip install -e ".[all]"
+python3 -m pytest -q
+~~~
 
-<p align="center"><img src="screenshot/en/flow.png" alt="Workflow" width="820"></p>
-
-## Design principles
-
-- **Capabilities are opt-in submodules.** The top-level package imports
-  nothing heavy; a translation-only install stays dependency-free.
-- **Deterministic contracts.** `ReadingToken`, `TranslationUnit`, and the
-  dictionary model are small, testable, versioned interfaces.
-- **Translation is an LLM capability.** The library defines the contract,
-  conventions, and validation; you choose the executor (an Agent or a model
-  endpoint you bring).
-- **Evidence over replacement.** Dictionary data enriches and audits; it never
-  silently overrides the primary engine.
-- **No product layer.** Cleaning, layouts, UI, and user data stay in your
-  application.
-
-## Boundaries (non-goals)
-
-This library is intentionally not:
-
-- a translation engine itself (translation is an LLM capability);
-- a lyric acquisition or cleaning tool;
-- a furigana/HTML renderer or a language detector;
-- a user-data store, cloud service, or provider of API keys;
-- a dictionary data distribution (it consumes the Yomitan format, it does not
-  bundle dictionary archives).
-
-## Testing
-
-```bash
-python3 -m pip install -e ".[all,pykakasi]"
-python3 -m unittest discover -s tests -v
-```
-
-The test suite installs the optional PyKakasi comparison engine because a few
-compatibility tests exercise it. Normal reading installs can use `[reading]`
-or `[all]` without that GPL-3.0 dependency chain.
-
-The suite covers source preservation, contextual readings, kana/romaji,
-furigana alignment, deinflection, translation validation, provider transport,
-Yomitan parsing, JLPT analysis, grammar detection, and export round-trips.
-
-## Roadmap
-
-- grow reviewed contextual-reading fixtures;
-- integrate community frequency/JLPT/pitch-accent dictionaries through the
-  existing Yomitan reader;
-- add glossary files as first-class assets;
-- publish stable releases with compatibility notes;
-- measure reading accuracy on independently maintained corpora.
+The test suite checks API contracts, serialization, source preservation, and deterministic behavior. It does not establish reading accuracy or translation quality. If you publish benchmark claims, use a human-reviewed dataset and document the engine and dictionary versions.
 
 ## License
 
-MIT. The default reading extra uses Sudachi and its dictionary. The optional
-`pykakasi` extra installs PyKakasi, Fugashi and UniDic-Lite; PyKakasi is
-GPL-3.0, so that extra is kept separate from the default and `all` installs.
-Third-party projects and dictionary data retain their own licenses.
+MIT. Optional dependencies and external datasets may have different licenses; review their terms before redistribution.

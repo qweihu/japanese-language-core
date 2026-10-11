@@ -1,304 +1,143 @@
-# Nihongo Core（japanese-language-core）
+# Nihongo Core
 
-**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+**[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)**
 
-Nihongo Core は Python 向けの再利用可能な日本語言語機能ライブラリです：
-文脈付き読み、かな/ローマ字、読み-漢字アライメント、活用形復元、行単位翻訳
-コントラクト、辞書メタデータ、文法パターン検出、エクスポート契約。
+日本語の読みと言語データ契約を提供する、再利用可能な Python ライブラリです。文脈読み、かな・ローマ字変換、翻訳検証、辞書読み込み、文法チェック、エクスポート用モデルを備えています。
 
-設計の柱：
+歌詞検索サービス、エンドユーザー向けアプリ、Agent ワークフローではありません。検索方法、表示、翻訳サービス、ライセンス済みデータの選択は利用側が担当します。
 
-- **決定的な契約**：読みトークン、翻訳ユニット、辞書エントリなどは小さく
-  テスト可能でバージョン管理されたインターフェース。
-- **依存は必要に応じて**：ベースは依存ゼロ。読みは形態素辞書が必要、
-  翻訳は LLM 能力（エンドポイントはユーザーが用意）。
 
-> **能力の状態**：`reading` と `translation` には利用可能な API とアプリ利用者が
-> いますが、現在のテストは契約と原文保持を確認するもので、人間の読音正確率や
-> 翻訳の意味品質を測定したものではありません。読音ベンチマークを整備中です。
-> `dictionary` / `grammar` / `export` は実験的で、組み込みの消費者はまだありません。
+## 機能と成熟度
 
-## 機能一覧
-
-| モジュール | 名称 | 内容 |
+| 分野 | 提供する機能 | 状態と制限 |
 | --- | --- | --- |
-| `japanese_language_core.reading` | 読み | 原文保持の分かち書き + 文脈付き読み |
-| `japanese_language_core.reading.kana` | かな・ローマ字 | かな変換、全半角正規化、ヘボン式ローマ字 |
-| `japanese_language_core.reading.alignment` | 読み-漢字アライメント | 読みを漢字へ分配（ruby 用） |
-| `japanese_language_core.reading.deinflect` | 活用形復元 | 活用形 → 辞書形 候補 |
-| `japanese_language_core.reading.conjugator` | 活用形生成 | 辞書形 → 活用形生成 |
-| `japanese_language_core.reading.splitter` | 文分割 | 文分割（句点を保持） |
-| `japanese_language_core.reading.mora` | 拍カウント | 拍（モーラ）カウント |
-| `japanese_language_core.translation` | 翻訳 | 行単位契約・検証・言語レジストリ |
-| `japanese_language_core.translation.provider` | 翻訳プロバイダ | Agent モード or BYO-LLM |
-| `japanese_language_core.dictionary` | 辞書 | Yomitan 辞書リーダー + JLPT 分析 |
-| `japanese_language_core.dictionary.jmnedict` | 固有名詞（JMnedict） | 固有名詞の読み・カテゴリ |
-| `japanese_language_core.dictionary.pitch` | アクセント | アクセント位置 → H/L パターン |
-| `japanese_language_core.dictionary.scoring` | 難易度スコア | 可読性 / 難易度スコア |
-| `japanese_language_core.dictionary.kanjivg` | 筆順（KanjiVG） | 筆順・部首リーダー（データ別途） |
-| `japanese_language_core.grammar` | 文法 | 助詞・定型パターン検出 |
-| `japanese_language_core.export` | エクスポート | Anki ノート契約と対訳 Markdown |
-| `japanese_language_core.export.mining` | マイニング | 句 → カード → payload 契約 |
-| `japanese_language_core.sentences` | 例文バンク | Tatoeba 例文バンク（CC BY 2.0） |
+| 読み | 文脈付きトークン、平仮名、ヘボン式、読みのアライメント、かな変換、活用形の復元・生成、文分割、モーラ数 | 公開 API で、アプリ利用者があります。テストは契約と原文保持を確認しますが、人手による読音精度は測定しません。 |
+| 翻訳 | 行単位データモデル、検証器、言語レジストリ、用語チェック、任意の OpenAI 互換クライアント | 公開契約。構造検査だけでは意味品質を証明できません。モデルのエンドポイントとキーは利用側が用意します。 |
+| 参照データ | Yomitan の語句・漢字、JMnedict の名前、アクセント、難易度、KanjiVG、Tatoeba 例文 | 読み込み機能とアダプターで、多くは実験段階です。データを用意し、それぞれのライセンスに従ってください。 |
+| 組み合わせ | 助詞・パターン検出、Anki payload、対訳 Markdown、文マイニング契約 | 実験的な部品です。ユーザーフローとネットワーク処理はアプリ側の責任です。 |
 
-<p align="center">
-  <img src="screenshot/ja/reading.png" alt="読みの例" width="820">
-  <br><sub>原文保持の分かち書きと文脈読み</sub>
-</p>
-
-## シナリオナビ
-
-読み・翻訳・活用形は本番、辞書・文法・難易度は実験的、例文バンク
-（`sentences`）、専名（`dictionary.jmnedict`）、挖句（`export.mining`）
-は新規追加です。
+大規模な辞書・例文データは同梱しません。評価の限界は[ベンチマークの説明](docs/benchmarks.md)、人手確認の進捗は[読音レビュー表](docs/reading-review-sheet.md)を参照してください。
 
 ## インストール
 
-### 仮想環境（推奨）
+Python 3.10 以上。基本パッケージに実行時依存はありません。
 
-システム Python を汚さないよう、必ず仮想環境にインストールしてください。
-まだない場合は先に作成：
+| インストール | 内容 |
+| --- | --- |
+| <code>japanese-language-core[reading]</code> | 文脈読み用の SudachiPy と SudachiDict Core |
+| <code>japanese-language-core[translation]</code> | 翻訳契約と検証器。標準ライブラリのみ |
+| <code>japanese-language-core[all]</code> | 既定の読音依存 |
+| <code>japanese-language-core[pykakasi]</code> | 任意の比較エンジン。Fugashi/PyKakasi の依存には GPL-3.0 を含む |
 
-```bash
+~~~bash
 python3 -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-```
+source .venv/bin/activate
 
-アクティベート後に以下のコマンドを実行します。
+# 読音機能
+python -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
-### `python` と `python3` の互換
+# 翻訳契約のみ
+python -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
+~~~
 
-Python 3.10+ が必要です。macOS や多くの Linux では裸の `python` が無いか
-Python 2 を指すことがあるため、仮想環境の外では `python3` を使ってください。
-アクティベート後は `python` / `python3` どちらも使えます。未アクティベート時は
-`.venv/bin/python -m japanese_language_core ...` のように明示します。
+開発用：
 
-インストール後は `nihongo` コマンド（仮想環境の `bin` 内）も利用でき、
-プラットフォームに関わらず同じ挙動です。
+~~~bash
+git clone https://github.com/qweihu/japanese-language-core.git
+cd japanese-language-core
+python3 -m pip install -e ".[reading]"
+~~~
 
-```bash
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-```
+## クイックスタート：読み
 
-`[translation]` は標準ライブラリのみです。`[all]` は既定の読み処理を含みます。
-PyKakasi 比較エンジンは `.[pykakasi]` で別途導入します。この追加依存は GPL-3.0
-ライセンスなので、既定の読みに関する追加依存や `[all]` には含めません。
-`auto` は Sudachi が利用できない場合に、追加依存が導入済みの場合だけ PyKakasi に
-フォールバックします。どちらも利用できない場合は `EngineUnavailableError` になります。
-
-## クイックスタート
-
-読み：
-
-```python
+~~~python
 from japanese_language_core.reading import create_engine
 
 engine = create_engine("auto")
 tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
+
 for token in tokens:
     print(token.orig, token.hira, token.hepburn)
-```
 
-入力 `雨が降り止むまでは帰れない` → 読み
-`あめ / が / ふりやむ / まで / は / かえれ / ない`
-（ヘボン式：`ame / ga / furiyamu / made / ha / kaere / nai`）。
+assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
+~~~
 
-翻訳検証：
+各トークンは原文を保持したまま読みを追加します。例：<code>雨 → あめ</code>、
+<code>降り止む → ふりやむ</code>、<code>帰れ → かえれ</code>。空白や改行も保持します。
 
-```bash
-python3 -m japanese_language_core.translation validate \
-  --source source.txt --translation translation.txt --paired
-```
+<p align="center"><img src="screenshot/ja/reading.png" alt="原文、ひらがな、ヘボン式を示すトークン表" width="820"><br><sub>読みの例 · トークンを連結すると原文を復元できます。</sub></p>
 
-1 行ずつ対応していれば検証 OK（終了コード 0）。仮名が残る翻訳行は警告、
-行数不一致はエラーになります。
+## 読みの詳細
 
-BYO-LLM 翻訳：
+- <code>create_engine("auto")</code> は Sudachi を優先します。任意の PyKakasi 拡張がインストールされている場合だけ、そこへフォールバックします。どちらも利用できない場合はエラーになります。
+- <code>ReadingToken.orig</code> を順につなぐと入力を完全に再構成できます。<code>hira</code> と <code>hepburn</code> は読みを保持し、Sudachi 経路では形態情報も利用できます。
+- かな変換とヘボン式ローマ字変換は、読音追加依存なしで利用できます。
 
-```python
-from japanese_language_core.translation import (
-    OpenAICompatibleTranslator, TranslationUnit,
-)
+<p align="center"><img src="screenshot/ja/kana.png" alt="カタカナからひらがなとヘボン式への変換" width="820"><br><sub>かな変換 · 同じ入力に対する文字種とローマ字を表示。</sub></p>
 
-translator = OpenAICompatibleTranslator(
-    base_url="http://localhost:11434/v1", model="llama3.1",
-)
-result = translator.translate([TranslationUnit("明日は晴れる。")], target_lang="zh-CN")
-print(result.units[0].translation)  # 明天会放晴。
-```
+<p align="center"><img src="screenshot/ja/inflection.png" alt="日本語の動詞形分析と一般的な活用生成" width="820"><br><sub>活用例 · 入力形を分析し、よく使う形を生成します。</sub></p>
 
-## 読み
+人名、歌詞、方言、多義漢字の読みが常に正しいことを保証しません。現在のレビュー表は小規模な手順確認であり、精度スコアや人手評価済みベンチマークではありません。
 
-`create_engine("auto"|"sudachi"|"pykakasi")` がエンジンを返し、`tokens(text)`
-が `ReadingToken(orig, hira, hepburn)` を生成。`orig` は常に入力を再構成します。
+## 翻訳契約
 
-`auto` では実際に使われたエンジンを `engine.name` で確認できます
-（CLI は `reading --verbose`）。厳密に固定したい場合は
-`--engine sudachi` / `--engine pykakasi` を使用します。
+Core は翻訳モデルを内蔵しません。利用側が設定した OpenAI 互換エンドポイントに行単位のデータを送るか、Agent から同じ契約へ訳文を渡せます。
 
-```python
-from japanese_language_core.reading import ReadingToken
+検証器が確認する項目：
 
-token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
-```
+- <code>paired=True</code> の場合、空でない行が一対一に対応していること；
+- Ruby の構造と、タグを除いた原文の保持；
+- <code>♪</code>、<code>[Chorus]</code>、括弧内メモなどの保持；
+- 翻訳行に残った日本語の仮名；
+- 任意の用語集との一貫性。
 
-<p align="center"><img src="screenshot/ja/reading.png" alt="読みの例" width="820"></p>
+行数や構造の不一致はエラーです。翻訳行の仮名残りは通常は警告で、厳密モードでは非ゼロ終了コードになります。検証の成功は構造が契約に合うことを示すだけで、訳の正確さ、自然さ、歌詞への忠実さは証明しません。
 
-## かな・ローマ字
+<p align="center"><img src="screenshot/ja/translation.png" alt="有効な対訳とかな漏れの警告" width="820"><br><sub>翻訳検証 · 構造を確認し、未翻訳の日本語を検出します。</sub></p>
 
-```python
-from japanese_language_core.reading import to_hiragana, to_katakana, to_romaji
+任意クライアントを使う場合は、アプリ側からエンドポイント、モデル、キーを指定してください。Core は資格情報を提供せず、目標言語も決定しません。
 
-print(to_hiragana("ニホンゴ"))   # にほんご
-print(to_katakana("にほんご"))   # ニホンゴ
-print(to_romaji("しんぶん"))     # shimbun
-print(to_romaji("がっこう"))     # gakkou
-```
+## 参照データと実験的な機能
 
-<p align="center"><img src="screenshot/ja/kana.png" alt="かな・ローマ字" width="820"></p>
+これらは再利用可能な部品で、完成済みの製品機能ではありません。データ取得、ライセンス、キャッシュ、UI、製品上の判断は利用側が担当します。
 
-## アライメントと活用形
+### 辞書・例文リーダー
 
-```python
-from japanese_language_core.reading import align_reading, deinflect
+Yomitan 辞書リーダーは読み、語義、タグ、頻度、アクセント、JLPT メタデータを扱えます。JMnedict は名前を検索し、KanjiVG リーダーは筆順データを読み込みます。例文リーダーは Tatoeba の対訳を扱います。データは別途用意し、CC BY 2.0 の条件に従ってください。
 
-print(align_reading("食べる", "たべる"))
-# [('食', 'た'), ('べ', 'べ'), ('る', 'る')]
+<p align="center"><img src="screenshot/ja/dictionary.png" alt="読みとメタデータを含む Yomitan 項目" width="820"><br><sub>辞書読み込み · 呼び出し側が渡すデータから項目を読みます。</sub></p>
 
-# 曖昧な複合語（好き嫌い）は貪欲な一つの分布を返す既知の制限あり
-print(align_reading("好き嫌い", "すききらい"))
-# [('好', 'す'), ('き', 'き'), ('嫌', 'きら'), ('い', 'い')]
+<p align="center"><img src="screenshot/ja/sentences.png" alt="Tatoeba の日本語例文と対応する訳文" width="820"><br><sub>例文読み込み · 原文と提供された訳文を対応付けます。</sub></p>
 
-for candidate in deinflect("食べていました"):
-    print(candidate.word, "|", candidate.reason)
-# 食べる | past + polite + progressive
-```
+### 文法とエクスポート
 
-<p align="center"><img src="screenshot/ja/inflection.png" alt="活用形" width="820"></p>
+文法ヘルパーは助詞やパターンを決定的に検査しますが、完全な文法解析器ではありません。エクスポートモデルは Anki TSV、AnkiConnect payload、対訳 Markdown を作れますが、Anki へのネットワーク接続や学習者のカード管理は行いません。
 
-## 辞書と JLPT
+<p align="center"><img src="screenshot/ja/grammar.png" alt="助詞と文型を対象にした検査" width="820"><br><sub>文法チェック · 指定したパターンを報告し、完全解析とは主張しません。</sub></p>
 
-```python
-from japanese_language_core.dictionary import YomitanDictionary, analyze_difficulty
+<p align="center"><img src="screenshot/ja/export.png" alt="Anki TSV の項目と対訳テキスト" width="820"><br><sub>エクスポートデータ · 呼び出し側に渡す具体的な行を表示。</sub></p>
 
-dictionary = YomitanDictionary("JMdict.zip")
-term = dictionary.lookup_terms("日本語")[0]
-print(term.reading, term.definitions, term.tags)
+## CLI
 
-profile = analyze_difficulty("日本語を勉強する。", dictionary)
-print(profile.level_counts(), profile.unknown, profile.score)
-# {'n5': 3, 'unknown': 2} ['を', '。'] 5.0
-```
+<code>nihongo</code> と <code>python -m japanese_language_core</code> は決定的な操作を提供します。翻訳検証と翻訳ヘルパーには独立したモジュール入口があります。
 
-Yomitan 形式（`term_bank` / `kanji_bank` / `tag_bank` / meta bank）を読み、
-頻度・声調・JLPT タグを利用できます。
-
-頻度は整数または `value`/`frequency` キーを持つ dict、声調は
-`{position, category}` のリスト・整数位置・`"n/a"`（スキップ）という
-一般的なバリエーションに対応しています。
-
-<p align="center"><img src="screenshot/ja/dictionary.png" alt="辞書メタデータ" width="820"></p>
-
-## 文法
-
-```python
-from japanese_language_core.grammar import find_particles, find_grammar
-
-print([m.particle for m in find_particles("私は東京へ行きます。")])
-# ['は', 'へ']
-print([(m.name, m.matched) for m in find_grammar("食べているところです。")])
-# [('te-iru', 'ている')]
-```
-
-<p align="center"><img src="screenshot/ja/grammar.png" alt="文法" width="820"></p>
-
-## エクスポート
-
-```python
-from japanese_language_core.export import build_note, to_tsv, build_paired_markdown
-from japanese_language_core.translation import TranslationUnit
-
-note = build_note(TranslationUnit("日本語を勉強する。", "学习日语。"), expression="日本語")
-print(to_tsv([note]), end="")
-```
-
-```text
-Expression	Reading	Glossary	Sentence	Translation	Audio	Pitch	Frequency	Tags
-日本語	にほんご		日本語を勉強する。	学习日语。				jlptN5
-```
-
-```python
-print(build_paired_markdown([TranslationUnit("日本語を勉強する。", "学习日语。")]), end="")
-```
-
-```text
-日本語を勉強する。
-学习日语。
-```
-
-<p align="center"><img src="screenshot/ja/export.png" alt="エクスポート" width="820"></p>
-
-## CLI リファレンス
-
-```text
-python -m japanese_language_core.translation validate
-    --source FILE | -       ソース日本語テキスト
-    --translation FILE | -  翻訳テキスト
-    --paired                空でない行数を一致させる
-    --no-kana-warn          仮名漏れ警告を無効化
-    --glossary FILE         用語表 JSON
-    --strict-warnings       警告があると終了コード 3
-
-python -m japanese_language_core.translation translate
-    --source FILE | -       ソース
-    --target-lang CODE      必須。呼び出し側で選択
-    --base-url URL          OpenAI 互換エンドポイント
-    --model NAME            モデル
-    --api-key KEY           任意；環境変数 JAPANESE_LANGUAGE_CORE_API_KEY
-    --output FILE           翻訳をファイルに書く
-
+~~~bash
+nihongo --help
+python -m japanese_language_core.translation validate --source source.txt --translation translation.txt --paired
 python -m japanese_language_core.translation languages
-    [--registry FILE]       登録済み言語を一覧表示
-```
+~~~
 
-## 翻訳・CLI・ワークフロー
+<p align="center"><img src="screenshot/ja/cli.png" alt="CLI の検証結果と言語一覧" width="820"><br><sub>CLI 出力 · 検証の成功状態と警告数を返します。</sub></p>
 
-<p align="center"><img src="screenshot/ja/translation.png" alt="翻訳と検証" width="820"></p>
+## 開発と評価
 
-<p align="center"><img src="screenshot/ja/cli.png" alt="CLI" width="820"></p>
+~~~bash
+python3 -m pip install -e ".[all]"
+python3 -m pytest -q
+~~~
 
-<p align="center"><img src="screenshot/ja/flow.png" alt="ワークフロー" width="820"></p>
-
-## 設計原則
-
-- 能力はサブモジュール単位でオプトイン。トップレベルは重い import をしない。
-- 契約は小さく決定的（`ReadingToken`、`TranslationUnit`、辞書モデル）。
-- 翻訳自体は LLM 能力：ライブラリは契約・検証・言語レジストリを提供し、
-  実行は Agent かユーザー指定のエンドポイント。
-- 辞書データは証拠：主エンジンを静かに上書きしない。
-- クリーニング、レイアウト、UI、ユーザーデータはライブラリに含めない。
-
-## 境界（非目標）
-
-- 翻訳エンジン本体（翻訳は LLM 能力）；
-- 歌詞の取得・クリーニングツール；
-- furigana/HTML レンダラー、言語検出器；
-- ユーザーデータストア、クラウドサービス、API キー提供；
-- 辞書データの配布（Yomitan 形式を読むだけで、辞書アーカイブは同梱しない）。
-
-## テスト
-
-```bash
-python3 -m pip install -e ".[all,pykakasi]"
-python3 -m unittest discover -s tests -v
-```
-
-互換性テストの一部で任意の PyKakasi 比較エンジンを使うため、テストでは追加依存を
-インストールします。通常の読み取り利用では、GPL-3.0 の依存チェーンを含まない
-`[reading]` または `[all]` を使用できます。
+テストは API 契約、シリアライズ、原文保持、決定的な動作を確認します。読音精度や翻訳品質は測定しません。評価結果を公開する場合は、人手で確認したデータを使い、読音エンジンと辞書のバージョンを記録してください。
 
 ## ライセンス
 
-MIT。既定の読みに関する追加依存は Sudachi と辞書です。PyKakasi、Fugashi、UniDic-Lite
-を含む任意の比較用追加依存は GPL-3.0 を含むため分離しています。依存 OSS と辞書データの
-ライセンスは各プロジェクトに帰属します。
+MIT。任意の依存パッケージや外部データには別のライセンスが適用される場合があります。再配布前に個別に確認してください。

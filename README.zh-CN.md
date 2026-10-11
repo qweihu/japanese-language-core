@@ -1,690 +1,143 @@
-# Nihongo Core（japanese-language-core）
+# Nihongo Core
 
-**[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)**
+**[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)**
 
-Nihongo Core 是一个面向 Python 的专业日语语言处理库：上下文读音、假名与罗马音、
-读音-汉字对齐、活用形还原、逐句翻译契约、词典元数据、语法型检测与导出契约。
+Nihongo Core 是可复用的 Python 日语语言能力库，提供上下文读音、假名与罗马音转换、翻译校验、词典读取、语法检查和导出数据结构。
 
-它围绕两个理念构建：
+它是代码库，不是歌词搜索服务、终端应用或 Agent 工作流。具体应用决定如何搜索、如何呈现、使用哪种翻译服务，以及提供哪些具有授权的数据集。
 
-- **确定性契约**：核心行为是小型、可测试、可版本化的接口——读音 token、
-  翻译单元、词典词条——你可以放心在其上构建工具。
-- **可选重依赖**：基础包零依赖。读音需要形态学词典；翻译是 LLM 能力，
-  端点由你提供；其余一切保持轻量。
 
----
+## 能力与成熟度
 
-## 功能总览
-
-| 模块名称 | 名称 | 内容 |
+| 领域 | 能力 | 状态与限制 |
 | --- | --- | --- |
-| [`japanese_language_core.reading`](#读音reading) | 读音 | 保原文分词 + 上下文读音（`auto` / `sudachi` / `pykakasi`） |
-| [`japanese_language_core.reading.kana`](#假名与罗马音) | 假名与罗马音 | 假名转换、全半角归一、Hepburn 罗马音 |
-| [`japanese_language_core.reading.alignment`](#读音-汉字对齐) | 读音-汉字对齐 | 读音分配到汉字（ruby 渲染） |
-| [`japanese_language_core.reading.deinflect`](#活用形还原) | 活用形还原 | 变形 → 辞書形 候选 |
-| [`japanese_language_core.reading.conjugator`](#活用形还原) | 活用形生成 | 辞書形 → 常用活用形生成 |
-| [`japanese_language_core.reading.splitter`](#读音reading) | 句子分割 | 句子分割（保留句末符号） |
-| [`japanese_language_core.reading.mora`](#读音reading) | 拍计数 | 拍（mora）计数 |
-| [`japanese_language_core.translation`](#翻译translation) | 翻译 | 逐句契约、校验、语言注册表、术语一致性 |
-| [`japanese_language_core.translation.provider`](#byo-llm-翻译) | 翻译执行器 | Agent 模式（无 API）或 BYO-LLM（任意 OpenAI 兼容端点） |
-| [`japanese_language_core.dictionary`](#词典dictionary) | 词典 | Yomitan 词典读取 + JLPT 难度分析 |
-| [`japanese_language_core.dictionary.jmnedict`](#专名jmnedict) | 专名（JMnedict） | 专名查询：读音与类别 |
-| [`japanese_language_core.dictionary.pitch`](#搜索声调难度打分与笔顺) | 声调 | 声调位置 → H/L 升降模式与分类 |
-| [`japanese_language_core.dictionary.scoring`](#搜索声调难度打分与笔顺) | 难度打分 | 可读性 / 难度打分 |
-| [`japanese_language_core.dictionary.kanjivg`](#搜索声调难度打分与笔顺) | 笔顺（KanjiVG） | 笔顺与部首读取器（数据自备） |
-| [`japanese_language_core.grammar`](#语法grammar) | 语法 | 助词与常见语法型检测 |
-| [`japanese_language_core.export`](#导出export) | 导出 | Anki 笔记契约与中日对照 Markdown |
-| [`japanese_language_core.export.mining`](#闪卡挖掘mining) | 挖句流水线 | Anki 挖句流水线契约（句 → 笔记 → payload） |
-| [`japanese_language_core.sentences`](#例句句库sentences) | 例句句库 | Tatoeba 句库读取器（数据 CC BY 2.0） |
+| 读音 | 上下文分词、平假名、Hepburn、读音对齐、假名转换、活用还原与生成、句子分割、拍数 | 公开 API，已有应用调用方。测试检查接口契约和原文保留，不代表人工读音准确率。 |
+| 翻译 | 逐行数据模型、校验器、语言注册表、术语表检查、可选 OpenAI 兼容客户端 | 公开契约。结构检查不能证明译文语义正确；模型端点和密钥由调用方提供。 |
+| 参考数据 | Yomitan 词条与汉字、JMnedict 专名、声调、难度评分、KanjiVG、Tatoeba 例句 | 数据读取器和适配器，多数仍属实验能力。数据由调用方提供，并遵守各自许可。 |
+| 组合工具 | 助词和语法型检查、Anki payload、中日对照 Markdown、挖句契约 | 实验性积木；用户流程和网络请求由应用实现。 |
 
-> **能力状态**：`reading` 与 `translation` 有可用 API 和应用调用方，但当前测试
-> 验证的是契约和原文保真，并未测量人工读音准确率或翻译语义质量；读音人工评测
-> 仍在建设中。`dictionary`、`grammar`、`export` 属于实验能力，目前没有内置消费方。
-
-<p align="center">
-  <img src="screenshot/zh/reading.png" alt="读音示例" width="820">
-  <br><sub>保原文的分词与上下文读音</sub>
-</p>
+仓库不打包大型词典或例句数据。当前评测限制与读音复核状态见[基准说明](docs/benchmarks.md)和[读音复核表](docs/reading-review-sheet.md)。
 
 ## 安装
 
-需要 Python 3.10+。
+需要 Python 3.10+。基础包没有运行时依赖。
 
-### 虚拟环境（推荐）
+| 安装项 | 内容 |
+| --- | --- |
+| <code>japanese-language-core[reading]</code> | SudachiPy 与 SudachiDict Core，上下文读音 |
+| <code>japanese-language-core[translation]</code> | 翻译契约与校验器，仅使用标准库 |
+| <code>japanese-language-core[all]</code> | 默认读音依赖 |
+| <code>japanese-language-core[pykakasi]</code> | 可选对照引擎；Fugashi/PyKakasi 依赖链含 GPL-3.0 |
 
-始终在虚拟环境里安装，避免污染系统 Python。还没有虚拟环境时先创建：
+~~~bash
+python3 -m venv .venv
+source .venv/bin/activate
 
-```bash
-python3 -m venv .venv          # 创建环境
-source .venv/bin/activate      # macOS/Linux；Windows: .venv\Scripts\activate
-```
+# 读音能力
+python -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
 
-然后在已激活的环境中执行下面的安装命令。
-
-### Python 与 python3 命令兼容
-
-本库需要 Python 3.10+。在 macOS 和多数 Linux 上，裸 `python` 命令可能不存在
-或指向 Python 2，虚拟环境外请使用 `python3`。在已激活的虚拟环境内
-`python` 与 `python3` 都可用；未激活时请显式调用解释器，例如
-`.venv/bin/python -m japanese_language_core ...`。
-
-安装后也可以直接使用 `nihongo` 命令（位于虚拟环境的 `bin` 目录），
-各平台行为一致，不区分 `python`/`python3`。
-
-```bash
-# 上下文读音（Sudachi + 词典；不包含 GPL 对照引擎）
-python3 -m pip install "japanese-language-core[reading] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# 仅翻译（纯标准库，零依赖）
-python3 -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# 全部宽松许可的运行依赖
-python3 -m pip install "japanese-language-core[all] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-
-# 可选 PyKakasi 对照引擎（依赖链含 GPL-3.0）
-python3 -m pip install "japanese-language-core[pykakasi] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
-```
+# 或仅安装翻译契约
+python -m pip install "japanese-language-core[translation] @ git+https://github.com/qweihu/japanese-language-core.git@v0.4.0"
+~~~
 
 本地开发：
 
-```bash
+~~~bash
 git clone https://github.com/qweihu/japanese-language-core.git
 cd japanese-language-core
 python3 -m pip install -e ".[reading]"
-```
+~~~
 
-顶层包不 import 任何重模块；重适配器在 `reading` 子模块内延迟加载，
-纯翻译安装保持零依赖。
+## 快速上手：读音
 
-## 快速上手
-
-### 1. 给一句话加读音
-
-```python
+~~~python
 from japanese_language_core.reading import create_engine
 
 engine = create_engine("auto")
 tokens = tuple(engine.tokens("雨が降り止むまでは帰れない"))
+
 for token in tokens:
     print(token.orig, token.hira, token.hepburn)
-```
 
-输入 `雨が降り止むまでは帰れない`，输出读音
-`あめ / が / ふりやむ / まで / は / かえれ / ない`
-（Hepburn：`ame / ga / furiyamu / made / ha / kaere / nai`）。
-
-```python
 assert "".join(token.orig for token in tokens) == "雨が降り止むまでは帰れない"
-```
+~~~
 
-### 2. 校验逐句翻译
+token 保留原文并补充读音，例如：<code>雨 → あめ</code>、
+<code>降り止む → ふりやむ</code>、<code>帰れ → かえれ</code>。空格和换行也会保留。
 
-```bash
-python3 -m japanese_language_core.translation validate \
-  --source source.txt --translation translation.txt --paired
-```
+<p align="center"><img src="screenshot/zh/reading.png" alt="分词表列出原文、平假名和罗马音" width="820"><br><sub>读音示例 · 词语片段按顺序还原原句，并保留各自读音。</sub></p>
 
-`source.txt`：
+## 读音细节
 
-```text
-明日は晴れる。
-一緒に歩こう。
-```
+- <code>create_engine("auto")</code> 优先使用 Sudachi。只有安装了可选 PyKakasi 扩展时才会走该回退路径；否则读音引擎不可用时会报错。
+- <code>ReadingToken.orig</code> 按顺序拼接后可逐字还原输入；<code>hira</code> 与 <code>hepburn</code> 分别提供平假名和罗马音。Sudachi 路径还可带形态学信息。
+- 假名转换与 Hepburn 罗马音转换不依赖读音扩展。
 
-`translation.txt`：
+<p align="center"><img src="screenshot/zh/kana.png" alt="片假名转换为平假名和 Hepburn 罗马音" width="820"><br><sub>假名转换 · 同一输入展示两种假名与罗马音结果。</sub></p>
 
-```text
-明天会放晴。
-一起走吧。
-```
+<p align="center"><img src="screenshot/zh/inflection.png" alt="日语动词形态分析与常见活用生成" width="820"><br><sub>活用示例 · 分析输入词形，并生成常见变形。</sub></p>
 
-两行一一对应时校验通过；警告与报错情形详见下方「结构校验」。
+读音不保证人名、歌词、方言或多音汉字在所有上下文中都正确。当前复核表只是少量流程检查，不是准确率分数，也不是人工审校的基准集。
 
-### 3. 用自带 LLM 端点翻译
+## 翻译契约
 
-```python
-from japanese_language_core.translation import (
-    OpenAICompatibleTranslator, TranslationUnit,
-)
+Core 不内置翻译模型。它可以把逐行单元交给调用方配置的 OpenAI 兼容服务，也可以让 Agent 为同一数据契约提供译文。
 
-translator = OpenAICompatibleTranslator(
-    base_url="http://localhost:11434/v1", model="llama3.1",
-)
-result = translator.translate(
-    [TranslationUnit("明日は晴れる。"), TranslationUnit("一緒に歩こう。")],
-    target_lang="zh-CN",
-)
-for unit in result.units:
-    print(unit.source, "→", unit.translation)
-```
+校验器可以检查：
 
-```text
-明日は晴れる。 → 明天会放晴。
-一緒に歩こう。 → 一起走吧。
-```
+- <code>paired=True</code> 时非空行是否一一对应；
+- Ruby 标记是否合法，以及去除标记后原文是否一致；
+- <code>♪</code>、<code>[Chorus]</code>、括号备注等占位符是否保留；
+- 译文中是否残留日语假名；
+- 可选的术语表一致性。
 
-## 读音（reading）
+行数或结构错误会作为错误返回。译文残留假名默认是警告；开启严格警告后会返回非零状态。校验通过只表示结构符合约定，不代表译文准确、自然或忠实于歌曲。
 
-`create_engine` 返回 `ReadingEngine`，其 `tokens(text)` 产出
-`ReadingToken(orig, hira, hepburn)` 片段；`orig` 拼接后永远还原输入，
-包括空白与换行。
+<p align="center"><img src="screenshot/zh/translation.png" alt="一组有效译文和一条假名残留警告" width="820"><br><sub>翻译校验 · 结构通过，同时指出译文残留的日语假名。</sub></p>
 
-```python
-from japanese_language_core.reading import ReadingToken
+要使用可选客户端，请在你的应用中提供服务端点、模型和密钥。Core 不发放凭据，也不替调用方选择目标语言。
 
-token = ReadingToken("降り止む", "ふりやむ", "furiyamu")
-```
+## 参考数据与实验模块
 
-Sudachi 引擎下每个 token 还携带形态学元数据（PyKakasi 路径下为空）：
+这些模块是可复用组件，不是开箱即用的产品。数据获取、授权、缓存、用户界面和产品决策由使用它们的应用负责。
 
-| 字段 | 含义 |
-| --- | --- |
-| `part_of_speech` | 斜杠分隔的词性标签（如 `名詞/普通名詞/一般`） |
-| `dictionary_form` | 辞書形 |
-| `normalized_form` | Sudachi 标准形 |
+### 词典与例句读取器
 
-### 引擎模式
+Yomitan 词典读取器可读取读音、释义、标签、频率、声调和 JLPT 元数据；JMnedict 支持专名查询；KanjiVG 读取笔顺数据。例句读取器处理 Tatoeba 句对；数据需单独提供，许可证为 CC BY 2.0。
 
-| 模式 | 行为 | 适用 |
-| --- | --- | --- |
-| `auto` | 优先 Sudachi；只有安装了可选 PyKakasi 依赖时才会回退 | 常规使用 |
-| `sudachi` | 强制 Sudachi + 词典 | 严格生产/CI |
-| `pykakasi` | Fugashi/PyKakasi 路径 | 兼容与对比 |
+<p align="center"><img src="screenshot/zh/dictionary.png" alt="包含读音与元数据的 Yomitan 词条" width="820"><br><sub>词典读取 · 从调用方提供的数据中读取词条字段。</sub></p>
 
-严格模式在引擎不可用时抛 `EngineUnavailableError`，不会静默换引擎。
-`ReadingEngine` 是唯一公共边界；你不接触 Sudachi `Morpheme`、Fugashi tag
-对象或词典内部结构。
+<p align="center"><img src="screenshot/zh/sentences.png" alt="一条 Tatoeba 日语例句及其对应译文" width="820"><br><sub>例句读取 · 原文与提供的译文保持配对。</sub></p>
 
-`auto` 模式下实际使用的引擎可通过 `engine.name` 读取（含降级后）；Sudachi
-不可用且未安装 `[pykakasi]` 时会抛出 `EngineUnavailableError`。需要严格一致时用
-`--engine sudachi` / `--engine pykakasi`。CLI 的 `reading --verbose` 还会打印
-Python 和可获取的引擎包版本。
+### 语法与导出
 
-<p align="center"><img src="screenshot/zh/reading.png" alt="读音示例" width="820"></p>
+语法工具执行确定性的助词和模式检查，不是完整语法分析器。导出模型可以生成 Anki TSV、AnkiConnect payload 和逐句对照 Markdown，但不会联网操作 Anki，也不管理学习者的卡片集合。
 
-## 假名与罗马音
+<p align="center"><img src="screenshot/zh/grammar.png" alt="针对助词和语法型的定向检查" width="820"><br><sub>语法检查 · 报告指定模式，不声称完整解析句子。</sub></p>
 
-纯标准库工具：
+<p align="center"><img src="screenshot/zh/export.png" alt="Anki TSV 字段和逐句对照文本示例" width="820"><br><sub>导出数据 · 具体行数据可交给调用方使用。</sub></p>
 
-```python
-from japanese_language_core.reading import (
-    to_hiragana, to_katakana, to_romaji, is_kana, is_kanji,
-)
+## 命令行
 
-print(to_hiragana("ニホンゴ"))   # → にほんご
-print(to_katakana("にほんご"))   # → ニホンゴ
-print(to_hiragana("ﾆﾎﾝｺﾞ"))     # → にほんご  （半角 + 浊音符号）
-print(to_romaji("しんぶん"))     # → shimbun   （Hepburn：ん 在 b/m/p 前读 m）
-print(to_romaji("がっこう"))     # → gakkou    （促音双写）
-```
+<code>nihongo</code> 命令和 <code>python -m japanese_language_core</code> 提供确定性操作。翻译校验和翻译工具也有独立模块入口。
 
-核心库使用无额外依赖的 Hepburn 转换器，Sudachi token 的 `hepburn` 字段也由它生成。
-可选 PyKakasi 对照引擎单独通过 `[pykakasi]` 安装，不属于默认读音依赖。
-
-<p align="center"><img src="screenshot/zh/kana.png" alt="假名与罗马音" width="820"></p>
-
-## 读音-汉字对齐
-
-`align_reading(term, reading)` 把假名读音分配到汉字——ruby 渲染背后的分布问题：
-
-```python
-from japanese_language_core.reading import align_reading
-
-print(align_reading("食べる", "たべる"))
-```
-
-```text
-[('食', 'た'), ('べ', 'べ'), ('る', 'る')]
-```
-
-```python
-print(align_reading("日本語", "にほんご"))
-```
-
-```text
-[('日本語', 'にほんご')]
-```
-
-词中假名逐字匹配；每段汉字贪婪消费假名，直到遇到下一个假名或读完。
-歧义复合词（好き嫌い）可能需要词典级对齐，`dictionary` 能力可提供线索；
-该函数是确定性回退。贪心选择是合法但未必与社区词典一致的分布
-（如 好き嫌い → 好=す、き=き、嫌=きら）；需要与词典一致时请使用带读音
-分布的词典数据（读取器支持词条内 `furigana` 扩展字段）。已知限制。
-
-## 活用形还原
-
-`deinflect(word)` 返回辞書形候选及产生它的规则链：
-
-```python
-from japanese_language_core.reading import deinflect
-
-for candidate in deinflect("食べていました"):
-    print(candidate.word, "|", candidate.reason)
-```
-
-```text
-食べる | past + polite + progressive
-```
-
-（完整结果还包含中间形态，如 `食べている | polite past`。）规则引擎剥离常见
-后缀——ます/ない/た/て/ている/すぎる/やすい 等——结尾有歧义时输出多个候选
-（行った → 行く/行つ/行る/行う）。有词典数据时用 `dictionary.lookup_terms`
-过滤候选。
-
-<p align="center"><img src="screenshot/zh/inflection.png" alt="活用形" width="820"></p>
-
-## 翻译（translation）
-
-翻译是 LLM 能力。库提供契约、校验、语言注册表与执行器——不内置模型、
-不打包密钥。
-
-### 数据模型
-
-```python
-from japanese_language_core.translation import TranslationUnit, TranslationResult
-
-unit = TranslationUnit("明日は晴れる。", "明天会放晴。")
-result = TranslationResult(
-    source_lang="ja", target_lang="zh-CN",
-    units=[unit], provider="agent",
-)
-print(result.ok)  # True
-```
-
-### 结构校验
-
-```python
-from japanese_language_core.translation import validate_translation
-
-errors, warnings = validate_translation(
-    source_lines=["明日は晴れる。", "一緒に歩こう。"],
-    translation_lines=["明天会放晴。", "一起走吧。"],
-    paired=True,
-)
-print(errors)    # []
-print(warnings)  # []
-```
-
-检查项：
-
-- 行数配对（非空行数一致、空行分组保留）；
-- ruby/HTML 卫生（标签闭合、只允许 `ruby`/`rt`）；
-- 原文保真（剥离 ruby 后还原原文）；
-- 占位符保留（`♪`、`[Chorus]`、`（…）`、`【…】`）；
-- 假名漏译（翻译行残留平假名/片假名）；
-- 术语一致性（可选）。
-
-CLI（命令见快速上手与 CLI 参考）：
-
-| 情况 | 结论 |
-| --- | --- |
-| 行数一一对应、无残留假名 | 校验通过，退出码 0 |
-| 翻译行残留假名（漏译） | 警告；`--strict-warnings` 下退出码 3 |
-| 行数不匹配或结构错误 | 错误，退出码 1 |
-
-<p align="center"><img src="screenshot/zh/translation.png" alt="翻译校验示例" width="820"></p>
-
-### 语言注册表
-
-```bash
-python3 -m japanese_language_core.translation languages
-```
-
-```text
-en: English
-zh-CN: 简体中文
-```
-
-```python
-from japanese_language_core.translation import LanguageRegistry
-
-registry = LanguageRegistry.from_package()
-print(registry.default().code)  # zh-CN
-print(registry.codes())         # ['en', 'zh-CN']
-```
-
-机器可读注册表（`translation/data/languages.json`）驱动 BYO-LLM prompt；
-新增语言 = 注册 + （可选）为 Agent 补充人读约定。
-
-### 术语一致性
-
-```python
-from japanese_language_core.translation import TermGlossary, GlossaryEntry
-
-glossary = TermGlossary()
-glossary.add(GlossaryEntry(source="明日", preferred="明天"))
-
-errors, warnings = validate_translation(
-    ["明日は晴れる。"], ["明天会放晴。"], paired=True, glossary=glossary,
-)
-print(warnings)  # []
-```
-
-当源词未翻译、未使用首选译文、或同一词在不同行译文不一致时告警。
-
-## BYO-LLM 翻译
-
-自带 OpenAI 兼容端点——Ollama、vLLM、LM Studio、网关均可。配置 `base_url`
-（客户端自动追加 `/chat/completions`）、`model`、可选 `api_key`（或环境变量
-`JAPANESE_LANGUAGE_CORE_API_KEY`）、`temperature`、`max_tokens`，以及
-`max_retries` / `retry_backoff` / `max_chars_per_request`。
-可运行示例见快速上手 #3。
-
-CLI：
-
-```bash
-export JAPANESE_LANGUAGE_CORE_API_KEY=sk-...
-python3 -m japanese_language_core.translation translate \
-  --source source.txt --target-lang zh-CN \
-  --base-url https://api.example.com/v1 --model my-model
-```
-
-执行过程：
-
-1. 用注册语言的约定自动构建 system prompt；
-2. 语言注册表中的 few-shot 示例稳定风格与输出形态；
-3. 长输入自动分批（`max_chars_per_request`，默认 4000），失败自动重试
-   （`max_retries`、`retry_backoff`）；
-4. 模型输出按源行数解析回逐行翻译；行数不足抛 `TranslateError`——
-   不会静默截断；
-5. 结果走同一套 `validate_translation` 校验。
-
-测试时可注入 `transport` 可调用对象（默认是标准库 `urllib` 实现）：
-
-```python
-def fake_transport(url, headers, payload):
-    return '{"choices": [{"message": {"content": "1. 明天会放晴。"}}]}'
-
-translator = OpenAICompatibleTranslator(
-    base_url="https://example.test/v1", model="test",
-    transport=fake_transport,
-)
-```
-
-## 词典（dictionary）
-
-词典读取器消费开放的 **Yomitan 格式**（zip 包）——社区日语词典的事实标准
-（JMdict 系、频率、声调、JLPT 标签等）。最小 `term_bank_1.json`：
-
-```json
-[
-  ["日本語", "にほんご", ["language"], [], 0, ["Japanese language"], 100, ["jlptN5"]],
-  ["勉強", "べんきょう", ["n", "vs"], [], 0, ["study"], 101, ["jlptN5"]]
-]
-```
-
-```python
-from japanese_language_core.dictionary import YomitanDictionary
-
-dictionary = YomitanDictionary("JMdict.zip")
-term = dictionary.lookup_terms("日本語")[0]
-print(term.reading, term.definitions, term.tags, term.frequency)
-```
-
-```text
-にほんご ['Japanese language'] ['language', 'jlptN5'] None
-```
-
-汉字 bank 查询：
-
-```python
-kanji = dictionary.lookup_kanji("日")[0]
-print(kanji.onyomi, kanji.kunyomi, kanji.meanings)
-```
-
-```text
-['ニチ', 'ジツ'] ['ひ'] ['day', 'sun']
-```
-
-支持的 bank：
-
-| Bank | 内容 |
-| --- | --- |
-| `term_bank_*.json` | 词条、读音、释义、标签、规则、score、sequence |
-| `term_meta_bank_*.json` | 频率（`freq`）与声调（`pitch`） |
-| `kanji_bank_*.json` | 音读/训读、释义、标签、统计 |
-| `kanji_meta_bank_*.json` | 汉字频率 |
-| `tag_bank_*.json` | 标签定义（词性、等级、分类） |
-| `index.json` | 词典元数据 |
-
-社区词典对频率/声调数据的编码存在几种常见变体，读取器均已覆盖：频率可为
-整数或含 `value`/`frequency` 键的 dict；声调可为 `{position, category}`
-列表、整数位置或 `"n/a"`（跳过）。
-
-### JLPT 难度分析
-
-```python
-from japanese_language_core.dictionary import analyze_difficulty
-
-profile = analyze_difficulty("日本語を勉強する。", dictionary)
-print(profile.level_counts(), profile.unknown, profile.score)
-```
-
-```text
-{'n5': 3, 'unknown': 2} ['を', '。'] 5.0
-```
-
-传入读音引擎可用形态学分词替代最长匹配回退：
-
-```python
-from japanese_language_core.reading import create_engine
-
-profile = analyze_difficulty("日本語を勉強する。", dictionary, engine=create_engine("auto"))
-```
-
-<p align="center"><img src="screenshot/zh/dictionary.png" alt="词典元数据示例" width="820"></p>
-
-### 专名（JMnedict）
-
-```python
-names = dictionary.lookup_names("山田")
-print(names[0].readings, names[0].categories)
-```
-
-```text
-('やまだ',) ['surname']
-```
-
-`NameEntry` 携带读音、类别（姓氏/名字/地名/组织/…）与可选释义；
-兼容 JMnedict 的"读音列为空、释义槽放假名读音"格式。
-
-### 搜索、声调、难度打分与笔顺
-
-```python
-from japanese_language_core.dictionary import (
-    classify, KanjiVGReader, pattern, readability,
-)
-
-dictionary.search("日本", "prefix")       # prefix / substring / wildcard
-pattern(4, 2)                             # ('H', 'H', 'L', 'L') → 中高
-classify(4, 2)                            # "中高 nakadaka"
-readability(profile)                      # 0..1，越大越简单
-KanjiVGReader("path/to/kanjivg").lookup("日")  # 笔顺与部首（数据自备）
-```
-
-### 例句句库（sentences）
-
-```python
-from japanese_language_core.sentences import SentenceBank
-
-bank = SentenceBank.from_tatoeba("jpn_sentences.tsv", "jpn-cmn_links.tsv")
-examples = bank.lookup("日本語")
-for sentence in examples:
-    print(sentence.text, "→", [t.text for t in bank.translations(sentence.id)])
-```
-
-读取 Tatoeba 句表与链接导出（CC BY 2.0）；下载与解压由调用方负责。
-
-<p align="center"><img src="screenshot/zh/sentences.png" alt="例句句库" width="820"></p>
-
-## 语法（grammar）
-
-确定性的表层检测——快速可测，不替代形态学分析：
-
-```python
-from japanese_language_core.grammar import find_particles, find_grammar
-
-print([m.particle for m in find_particles("私は東京へ行きます。")])
-```
-
-```text
-['は', 'へ']
-```
-
-```python
-print([(m.name, m.matched) for m in find_grammar("食べているところです。")])
-```
-
-```text
-[('te-iru', 'ている')]
-```
-
-助词检测识别"是已知助词或以助词结尾"的假名串。语法型包括て形结构
-（ている/ておく/てしまう/てもいい/てはいけない/てほしい）、义务
-（なければならない/ないといけない）、可能（ことができる）、条件
-（たら/れば）等。
-
-<p align="center"><img src="screenshot/zh/grammar.png" alt="语法检测" width="820"></p>
-
-## 导出（export）
-
-### Anki 笔记
-
-```python
-from japanese_language_core.export import build_note, to_tsv
-from japanese_language_core.translation import TranslationUnit
-
-note = build_note(
-    TranslationUnit("日本語を勉強する。", "学习日语。"),
-    expression="日本語", reading="にほんご",
-    glossary="Japanese language", tags=["jlptN5"],
-)
-print(to_tsv([note]), end="")
-```
-
-```text
-Expression	Reading	Glossary	Sentence	Translation	Audio	Pitch	Frequency	Tags
-日本語	にほんご	Japanese language	日本語を勉強する。	学习日语。				jlptN5
-```
-
-`anki_connect_payload(...)` 生成 AnkiConnect `addNote` 请求结构；
-实际 API 调用留在你的应用层。
-
-### 中日对照 Markdown
-
-```python
-from japanese_language_core.export import build_paired_markdown
-from japanese_language_core.translation import TranslationUnit
-
-markdown = build_paired_markdown([
-    TranslationUnit("日本語を勉強する。", "学习日语。"),
-    TranslationUnit("一緒に歩こう。", "一起走吧。"),
-])
-print(markdown, end="")
-```
-
-```text
-日本語を勉強する。
-学习日语。
-
-一緒に歩こう。
-一起走吧。
-```
-
-每单元"源行 + 紧跟的翻译行 + 组间空行"。
-
-### 闪卡挖掘（mining）
-
-`export.mining` 是挖句流水线契约：句 → 笔记 → AnkiConnect payload。
-
-```python
-from japanese_language_core.export import MiningUnit, mining_payload
-
-unit = MiningUnit(
-    sentence="日本語を勉強する。",
-    translation="学习日语。",
-    expression="日本語",
-    reading="にほんご",
-    tags=["jlptN5"],
-)
-payloads = mining_payload([unit], deck_name="Mining", model_name="Basic")
-```
-
-<p align="center"><img src="screenshot/zh/export.png" alt="导出契约" width="820"></p>
-
-## CLI 参考
-
-```text
-python -m japanese_language_core.translation validate
-    --source FILE | -       源日语文本
-    --translation FILE | -  翻译文本
-    --paired                要求非空行数一致
-    --no-kana-warn          关闭假名漏译警告
-    --glossary FILE         JSON 术语表（{"entries": [...]}）
-    --strict-warnings       有警告时退出码 3
-
-python -m japanese_language_core.translation translate
-    --source FILE | -       源日语文本
-    --target-lang CODE      必填；由调用方根据用户语境选择
-    --base-url URL          OpenAI 兼容端点
-    --model NAME            模型标识
-    --api-key KEY           可选；环境变量 JAPANESE_LANGUAGE_CORE_API_KEY
-    --output FILE           写入翻译文件
-
+~~~bash
+nihongo --help
+python -m japanese_language_core.translation validate --source source.txt --translation translation.txt --paired
 python -m japanese_language_core.translation languages
-    [--registry FILE]       列出已注册目标语言
-```
+~~~
 
-<p align="center"><img src="screenshot/zh/cli.png" alt="CLI 示例" width="820"></p>
+<p align="center"><img src="screenshot/zh/cli.png" alt="CLI 校验结果和语言列表" width="820"><br><sub>CLI 输出 · 校验返回通过状态及警告数量。</sub></p>
 
-## 工作流
+## 开发与评测
 
-文本 → 读音/词典 → 翻译/校验 → 导出/评测。各能力可组合成流水线，
-每一步都保持小而可测的契约。
+~~~bash
+python3 -m pip install -e ".[all]"
+python3 -m pytest -q
+~~~
 
-<p align="center"><img src="screenshot/zh/flow.png" alt="工作流" width="820"></p>
+测试覆盖 API 契约、序列化、原文保留和确定性行为，不衡量读音准确率或翻译质量。发布基准结论前，应使用人工复核的数据集，并注明引擎与词典版本。
 
-## 设计原则
+## 许可证
 
-- **能力按子模块按需引入**：顶层不 import 重模块，纯翻译安装零依赖；
-- **契约小而可测**：`ReadingToken`、`TranslationUnit`、词典模型都是
-  小接口 + 契约测试；
-- **翻译是 LLM 能力**：库定义契约/约定/校验，执行者由你选择
-  （Agent 或自带端点）；
-- **词典是证据不是替代**：丰富与审计结果，不静默覆盖主引擎；
-- **不包含产品层**：清洗、排版、UI、用户数据留在你的应用里。
-
-## 边界（非目标）
-
-本库明确不包含：
-
-- 翻译引擎本体（翻译是 LLM 能力）；
-- 歌词抓取或清洗工具；
-- furigana/HTML 渲染器与语言检测器；
-- 用户数据存储、云服务与 API 密钥；
-- 词典数据分发（消费 Yomitan 格式，不打包词典归档）。
-
-## 测试
-
-```bash
-python3 -m pip install -e ".[all,pykakasi]"
-python3 -m unittest discover -s tests -v
-```
-
-少量兼容性测试会运行可选的 PyKakasi 对照引擎，因此完整测试环境需要安装它。普通读音使用者可只安装 `[reading]` 或 `[all]`，无需安装这条 GPL-3.0 依赖链。
-
-测试覆盖原文保真、上下文读音、假名/罗马音、读音对齐、活用形还原、
-翻译校验、provider 传输、Yomitan 解析、JLPT 分析、语法检测与导出往返。
-
-## Roadmap
-
-- 扩充审核过的上下文读音用例；
-- 通过现有 Yomitan 读取器接入社区频率/JLPT/声调词典；
-- 术语表文件成为一等资产；
-- 发布稳定版本与兼容性说明；
-- 在独立维护的日语语料上度量读音准确率。
-
-## 许可
-
-MIT。默认读音运行依赖为 Sudachi 和其词典。可选 PyKakasi 对照依赖包含 GPL-3.0
-依赖链，因此从默认读音依赖和 `[all]` 中分离；各依赖与词典数据的许可归各自项目所有。
+MIT。可选依赖和外部数据集可能采用不同许可证；重新分发前请分别核对。
