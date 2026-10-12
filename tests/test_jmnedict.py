@@ -1,6 +1,8 @@
 import json
+import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 
 from japanese_language_core.dictionary import YomitanDictionary
 
@@ -25,7 +27,9 @@ def make_fixture(path):
 
 class JmnedictTests(unittest.TestCase):
     def setUp(self):
-        self.path = "/private/tmp/fixture-jmnedict.zip"
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tempdir.cleanup)
+        self.path = Path(self.tempdir.name) / "fixture-jmnedict.zip"
         make_fixture(self.path)
         self.dictionary = YomitanDictionary(self.path)
 
