@@ -1,7 +1,9 @@
 import io
 import json
+import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 
 from japanese_language_core.dictionary import YomitanDictionary
 
@@ -42,10 +44,17 @@ def make_fixture(path):
 
 
 class YomitanDictionaryTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tempdir.cleanup)
+
+    def fixture_path(self, name):
+        return Path(self.tempdir.name) / name
+
     def test_parse_and_lookup(self):
         buffer = io.BytesIO()
         make_fixture(buffer)
-        path = "/private/tmp/fixture-yomitan.zip"
+        path = self.fixture_path("fixture-yomitan.zip")
         with open(path, "wb") as handle:
             handle.write(buffer.getvalue())
         dictionary = YomitanDictionary(path)
@@ -60,7 +69,7 @@ class YomitanDictionaryTests(unittest.TestCase):
         self.assertIn("jlptN5", dictionary.tags())
 
     def test_validate_reports_structural_errors(self):
-        path = "/private/tmp/fixture-empty-yomitan.zip"
+        path = self.fixture_path("fixture-empty-yomitan.zip")
         with zipfile.ZipFile(path, "w") as archive:
             archive.writestr("index.json", json.dumps({"format_version": 3}))
         dictionary = YomitanDictionary(path)
@@ -69,7 +78,7 @@ class YomitanDictionaryTests(unittest.TestCase):
         self.assertTrue(any("term_bank" in error for error in errors))
 
     def test_meta_variants(self):
-        path = "/private/tmp/fixture-meta-yomitan.zip"
+        path = self.fixture_path("fixture-meta-yomitan.zip")
         with zipfile.ZipFile(path, "w") as archive:
             archive.writestr(
                 "index.json",
@@ -151,7 +160,7 @@ class YomitanDictionaryTests(unittest.TestCase):
             self.assertEqual(("まな.ぶ",), tuple(kanji.kunyomi))
 
     def test_furigana_extension_and_search(self):
-        path = "/private/tmp/fixture-furigana-yomitan.zip"
+        path = self.fixture_path("fixture-furigana-yomitan.zip")
         with zipfile.ZipFile(path, "w") as archive:
             archive.writestr(
                 "index.json",

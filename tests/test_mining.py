@@ -1,6 +1,8 @@
 import json
+import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 
 from japanese_language_core.dictionary import YomitanDictionary
 from japanese_language_core.export import (
@@ -30,7 +32,9 @@ def make_dictionary(path):
 
 class MiningTests(unittest.TestCase):
     def setUp(self):
-        self.path = "/private/tmp/fixture-mining.zip"
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tempdir.cleanup)
+        self.path = Path(self.tempdir.name) / "fixture-mining.zip"
         make_dictionary(self.path)
         self.dictionary = YomitanDictionary(self.path)
 
